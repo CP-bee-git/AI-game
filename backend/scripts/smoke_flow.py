@@ -1,4 +1,6 @@
 """Full workflow with simulated cloud HTTP; no real API credentials are tested."""
+import argparse
+import asyncio
 from io import BytesIO
 import json
 from pathlib import Path
@@ -14,6 +16,7 @@ import pymupdf
 
 from app import main
 from app.config import Settings
+from app.services.llm import CloudModelError, QwenCloudProvider
 from app.services.session import _attempts, _sessions
 from app.services.state import SQLiteMap
 
@@ -27,7 +30,84 @@ def make_docx() -> bytes:
     return output.getvalue()
 
 
+def check_cloud_errors() -> None:
+    cases = [
+        (401, "invalid_api_key", "wrong credential", 401, "cloud_authentication"),
+        (400, "Arrearage", "account not in good standing", 402, "cloud_quota"),
+        (403, "AllocationQuota.FreeTierOnly", "quota consumed", 402, "cloud_quota"),
+        (403, "access_denied", "API-Key restrictions", 403, "cloud_permission"),
+        (404, "model_not_found", "missing model", 404, "cloud_model_unavailable"),
+        (429, "rate_limit_exceeded", "rate limit", 429, "cloud_rate_limit"),
+        (400, "InvalidParameter", "enable_thinking must be false", 422, "cloud_model_incompatible"),
+        (400, "InvalidParameter", "invalid parameter", 422, "cloud_request_rejected"),
+        (503, "InternalError", "unavailable", 503, "cloud_unavailable"),
+        (0, "timeout", "timeout", 504, "cloud_timeout"),
+        (0, "connection", "connection", 503, "cloud_connection"),
+        (200, "bad_json", "not JSON", 502, "cloud_response_invalid"),
+        (200, "bad_probe", '{"ok":false}', 502, "cloud_response_invalid"),
+    ]
+    previous_key = main.settings.qwen_api_key
+    main.settings.qwen_api_key = ""
+    try:
+        for upstream_status, upstream_code, upstream_message, status, code in cases:
+            seen = []
+
+            def cloud(request: httpx.Request) -> httpx.Response:
+                body = json.loads(request.content)
+                seen.append(body)
+                assert body["model"] == "qwen3-32b"
+                assert body["enable_thinking"] is False and body["stream"] is False
+                assert body["response_format"] == {"type": "json_object"}
+                assert body["max_tokens"] == 32 and "json" in str(body["messages"]).lower()
+                if upstream_code == "timeout":
+                    raise httpx.ReadTimeout("sk-diagnostic-secret", request=request)
+                if upstream_code == "connection":
+                    raise httpx.ConnectError("sk-diagnostic-secret", request=request)
+                if upstream_status == 200:
+                    return httpx.Response(200, json={"id": "probe", "object": "chat.completion", "created": 0, "model": body["model"], "choices": [{"index": 0, "message": {"role": "assistant", "content": upstream_message}, "finish_reason": "stop"}]})
+                return httpx.Response(upstream_status, json={"error": {"code": upstream_code, "message": f"{upstream_message}: sk-diagnostic-secret"}})
+
+            def client(**kwargs):
+                assert kwargs["timeout"] == 25.0 and kwargs["max_retries"] == 0
+                return AsyncOpenAI(**kwargs, http_client=httpx.AsyncClient(transport=httpx.MockTransport(cloud)))
+
+            _attempts.clear()
+            _sessions.clear()
+            with patch("app.services.llm.AsyncOpenAI", client), TestClient(main.app) as browser:
+                response = browser.post("/api/v1/model/configure", json={"api_key": "sk-diagnostic-secret", "model": "qwen3-32b"})
+                assert response.status_code == status and response.json()["error_code"] == code, (upstream_code, response.status_code, response.text)
+                assert "sk-diagnostic-secret" not in response.text and not browser.get("/api/v1/model-config").json()["chat_configured"]
+                assert len(seen) == 1, "Connection validation must not duplicate a billable request"
+                if status == 429:
+                    assert response.headers["Retry-After"] == "30"
+        for key in ("sk-sp-subscription-secret", "LTAI-accesskey-secret"):
+            _attempts.clear()
+            with patch("app.services.llm.AsyncOpenAI", side_effect=AssertionError("Incompatible key must not be sent")), TestClient(main.app) as browser:
+                response = browser.post("/api/v1/model/configure", json={"api_key": key})
+                assert response.status_code == 422 and response.json()["error_code"] == "cloud_key_type" and key not in response.text
+    finally:
+        main.settings.qwen_api_key = previous_key
+        _attempts.clear()
+        _sessions.clear()
+    print(f"Cloud request contract + safe error classification: PASS ({len(cases) + 2} simulated cases)")
+
+
+def real_ping() -> None:
+    """One small real JSON request, using a private .env/environment key only."""
+    settings = Settings()
+    if not settings.qwen_chat_configured:
+        print("NOT TESTED: .env / environment has no DASHSCOPE_API_KEY or QWEN_API_KEY; add a private key to run this real connection diagnostic.")
+        raise SystemExit(2)
+    try:
+        models = asyncio.run(QwenCloudProvider(settings).ping())
+    except CloudModelError as exc:
+        print(f"FAIL [{exc.error_code}] HTTP {exc.status_code}: {exc.detail}")
+        raise SystemExit(1) from None
+    print(f"REAL CLOUD PASS: region={settings.qwen_region}, model={models[0]}, non-thinking JSON output verified; API Key not displayed.")
+
+
 def run() -> None:
+    check_cloud_errors()
     requests: list[dict] = []
 
     def cloud_response(request: httpx.Request) -> httpx.Response:
@@ -39,8 +119,8 @@ def run() -> None:
         if token == "sk-invalid-secret":
             return httpx.Response(401, json={"error": {"message": f"invalid credential: {token}", "type": "invalid_api_key"}})
         system = body["messages"][0]["content"]
-        if body.get("max_tokens") == 1:
-            result = "OK"
+        if body.get("max_tokens") == 32:
+            result = {"ok": True}
         elif "OCR" in system:
             result = "PYTHON SQL EXCEL DATA ANALYST"
         elif "简历结构化" in system:
@@ -53,6 +133,13 @@ def run() -> None:
             result = {"score": 4.0, "feedback": "回答包含项目证据。"}
         else:
             raise AssertionError(f"Unexpected cloud request: {system}")
+        if "OCR" not in str(system):
+            assert body["enable_thinking"] is False and body["stream"] is False
+            assert body["response_format"] == {"type": "json_object"}
+            assert "json" in str(body["messages"]).lower()
+            if body.get("max_tokens") != 32:
+                output_schema = json.loads(system.split("\nJSON Schema:\n", 1)[1])
+                assert output_schema["type"] == "object" and output_schema["properties"], "Every task must send its JSON schema to the cloud model"
         content = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False)
         return httpx.Response(200, json={"id": "simulated", "object": "chat.completion", "created": 0, "model": body["model"], "choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}]})
 
@@ -90,7 +177,7 @@ def run() -> None:
                 oversized = client.post("/api/v1/model/configure", content=json.dumps({"api_key": "x" * 5000}), headers={"Content-Type": "application/json"})
                 assert oversized.status_code == 413 and "x" * 100 not in oversized.text, oversized.text
                 invalid = client.post("/api/v1/model/configure", json={"api_key": "sk-invalid-secret"})
-                assert invalid.status_code == 502 and "sk-invalid-secret" not in invalid.text, invalid.text
+                assert invalid.status_code == 401 and invalid.json()["error_code"] == "cloud_authentication" and "sk-invalid-secret" not in invalid.text, invalid.text
                 assert not client.get("/api/v1/model-config").json()["chat_configured"]
                 for payload in [{"api_key": "sk invalid-secret"}, {"api_key": "sk-browser-one", "base_url": "http://localhost:1234/v1"}, {"api_key": "sk-browser-one", "region": "us"}]:
                     denied = client.post("/api/v1/model/configure", json=payload)
@@ -108,7 +195,7 @@ def run() -> None:
                 assert client.post("/api/v1/model/ping").json()["model"] == "qwen-plus"
                 assert requests[-1]["key"] == "sk-browser-one"
                 failed_change = client.post("/api/v1/model/configure", json={"api_key": "sk-invalid-secret", "model": "qwen-turbo"})
-                assert failed_change.status_code == 502 and client.get("/api/v1/model-config").json()["model"] == "qwen-plus"
+                assert failed_change.status_code == 401 and client.get("/api/v1/model-config").json()["model"] == "qwen-plus"
                 assert client.post("/api/v1/resumes/upload", files={"file": ("resume.docx", make_docx())}).status_code == 400
                 upload = client.post("/api/v1/resumes/upload", files={"file": ("resume.docx", make_docx(), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}, data={"privacy_acknowledged": "true"})
                 assert upload.status_code == 201, upload.text
@@ -192,4 +279,7 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser(description="CareerPilot simulated workflow or a small real cloud connection diagnostic")
+    parser.add_argument("--real", action="store_true", help="make one real JSON request using the private .env/environment API key")
+    args = parser.parse_args()
+    real_ping() if args.real else run()

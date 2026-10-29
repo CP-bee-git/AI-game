@@ -14,6 +14,8 @@ stop:
 
 smoke:
 	PYTHONPATH=backend .venv/bin/python backend/scripts/smoke_flow.py
+	.venv/bin/python backend/scripts/check_careers.py
+	.venv/bin/python backend/scripts/check_reports.py
 
 check:
 	.venv/bin/python -m compileall -q backend/app backend/scripts scripts

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     allowed_upload_extensions: str = ".pdf,.docx,.png,.jpg,.jpeg"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", env_ignore_empty=True, extra="ignore")
+
+    @field_validator("qwen_api_key")
+    @classmethod
+    def strip_key(cls, value: str) -> str:
+        return value.strip()
 
     @property
     def allowed_extensions(self) -> set[str]:

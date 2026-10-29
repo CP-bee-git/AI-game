@@ -63,7 +63,7 @@ test("cloud settings remain usable on a narrow phone", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.route("**/api/v1/model-config", (route) => route.fulfill({ json: disconnected }));
   await page.goto("/#cloud-config");
-  await expect(page.getByRole("heading", { name: /一枚密钥，.*开启千问的能力/  })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "连接云端模型"  })).toBeVisible();
   await page.getByLabel("千问 / 阿里云 API Key").fill("test-phone-key");
   await page.getByLabel("服务区域").selectOption("china");
   await expect(page.getByRole("button", { name: "验证并连接" })).toBeEnabled();

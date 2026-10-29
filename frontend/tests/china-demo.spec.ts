@@ -1,10 +1,27 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
-test("Chinese synthetic demo completes matching, diagnosis, interview and downloads", async ({ page }) => {
+test("Chinese synthetic demo completes profile stars, ten real careers, matching, diagnosis, interview and downloads", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
   await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
+  await expect(page.locator("#analysis")).toHaveCount(0);
   await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await expect(page.locator(".career-row")).toHaveCount(10);
+  await expect(page.locator(".dimension").first()).toBeVisible();
+  await expect(page.locator(".dimension").first().getByRole("img")).toHaveAttribute("aria-label", /5 星/);
+  await expect(page.locator(".catalog-note")).toContainText("O*NET");
+  await expect(page.locator(".career-row").first()).not.toContainText("（演示）");
+  await page.locator(".career-source").first().locator("summary").click();
+  await expect(page.locator(".career-source").first().getByRole("link")).toHaveAttribute("href", /https:\/\/www\.onetonline\.org\/link\/summary\//);
+  const profileDownloadEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载完整画像报告 HTML" }).click();
+  const profileDownload = await profileDownloadEvent;
+  expect(profileDownload.suggestedFilename()).toBe("careerpilot-profile.html");
+  const profilePath = await profileDownload.path();
+  expect(profilePath).not.toBeNull();
+  const profileHtml = await readFile(profilePath!, "utf8");
+  expect(profileHtml).toContain("onetonline.org");
   await page.getByRole("button", { name: "开始匹配" }).click();
   await expect(page.locator(".match-row")).toHaveCount(10);
   await expect(page.locator(".match-row").first()).toContainText("数据分析助理");
@@ -32,6 +49,9 @@ test("China demo loads on a phone without horizontal overflow", async ({ page })
   await page.goto("/");
   await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
   await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
+  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await expect(page.locator(".career-row")).toHaveCount(10);
+  await expect(page.locator(".profile-analysis")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
@@ -83,4 +103,25 @@ test("a fresh browser establishes its session before delayed demo metadata and p
   await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
   expect((await confirmed).ok()).toBe(true);
   await expect(page.getByRole("button", { name: "开始匹配" })).toBeVisible();
+});
+
+
+test("confirmed profile remains usable when career analysis fails and can be retried", async ({ page }) => {
+  let analysisCalls = 0;
+  await page.route("**/api/v1/resumes/*/analysis", async (route) => {
+    analysisCalls += 1;
+    if (analysisCalls === 1) {
+      await route.fulfill({ status: 503, json: { detail: "职业分析暂时不可用，请重试。" } });
+    } else {
+      await route.continue();
+    }
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
+  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await expect(page.locator("#analysis").getByRole("alert")).toContainText("暂时不可用");
+  await expect(page.getByRole("button", { name: "开始匹配" })).toBeVisible();
+  await page.getByRole("button", { name: "重新加载分析" }).click();
+  await expect(page.locator(".career-row")).toHaveCount(10);
+  expect(analysisCalls).toBe(2);
 });

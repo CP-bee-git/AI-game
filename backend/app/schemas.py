@@ -191,7 +191,7 @@ class ModelPingResponse(BaseModel):
 
 
 class ExportRequest(BaseModel):
-    type: Literal["diagnosis", "interview"]
+    type: Literal["profile", "diagnosis", "interview"]
     resource_id: UUID
     format: Literal["json", "html"] = "html"
 

@@ -37,11 +37,13 @@ from app.schemas import (
     ResumeResponse,
     TaskStatus,
 )
-from app.services.llm import QwenCloudProvider, model_config
+from app.services.llm import CloudModelError, QwenCloudProvider, model_config
 from app.services.diagnosis import build_diagnosis
 from app.services.diagnosis import generate_coaching
 from app.services.demo import load_china_demo, make_demo_resume
 from app.services.exporter import render_export
+from app.services.analysis import profile_analysis
+from app.services.careers import career_matches
 from app.services.interview import build_questions, evaluate_answer, evaluate_answer_with_model, generate_questions
 from app.services.matching import match_jobs
 from app.services.profile import extract_profile
@@ -87,6 +89,13 @@ async def safe_validation_error(request: Request, exc: RequestValidationError):
         # Never include request inputs: validation errors may contain a submitted secret.
         return JSONResponse(status_code=422, content={"detail": "配置格式无效，请检查 API Key、地域及 qwen 模型名；不接受自定义 API 地址"})
     return JSONResponse(status_code=422, content={"detail": [{"loc": error["loc"], "msg": error["msg"], "type": error["type"]} for error in exc.errors()]})
+
+
+@app.exception_handler(CloudModelError)
+async def safe_cloud_error(request: Request, exc: CloudModelError):
+    logger.warning("qwen_cloud_failed error_code=%s", exc.error_code)
+    headers = {"Retry-After": "30"} if exc.error_code == "cloud_rate_limit" else None
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail, "error_code": exc.error_code}, headers=headers)
 
 
 def _source_notice(profile: dict, job: dict) -> str | None:
@@ -173,6 +182,8 @@ async def configure_model(payload: ModelConfigureRequest, request: Request) -> M
     })
     try:
         await QwenCloudProvider(candidate).ping()
+    except CloudModelError:
+        raise
     except Exception as exc:
         logger.warning("qwen_cloud_configuration_failed error=%s", type(exc).__name__)
         raise HTTPException(status_code=502, detail="千问云 API 验证失败，请检查 API Key 所属地域、模型权限、余额及网络连接；原配置未更改") from None
@@ -191,6 +202,8 @@ async def model_ping() -> ModelPingResponse:
     require_qwen_chat()
     try:
         models = await QwenCloudProvider(model_settings(settings)).ping()
+    except CloudModelError:
+        raise
     except Exception as exc:
         logger.warning("qwen_cloud_ping_failed error=%s", type(exc).__name__)
         raise HTTPException(status_code=502, detail="无法连接千问云 API，请检查 API Key、地域、模型权限及余额") from None
@@ -226,6 +239,9 @@ async def upload_resume(
     try:
         vision_ocr = QwenCloudProvider(model_settings(settings)).vision_ocr if model_settings(settings).qwen_vision_configured else None
         _resume_blocks[resume_id] = await run_in_threadpool(initial_resume_blocks, destination, file.content_type or "", vision_ocr)
+    except CloudModelError:
+        storage.delete(destination)
+        raise
     except RuntimeError:
         storage.delete(destination)
         raise HTTPException(status_code=503, detail="图片或扫描 PDF 需要已连接、具有多模态权限的千问云 API，请检查配置后重试") from None
@@ -273,6 +289,8 @@ async def resume_profile(resume_id: UUID) -> ProfileDraft:
         return ProfileDraft.model_validate(payload)
     except HTTPException:
         raise
+    except CloudModelError:
+        raise
     except Exception as exc:
         logger.warning("profile_generation_failed resume_id=%s model=%s", resume_id, model_settings(settings).qwen_chat_model)
         raise HTTPException(status_code=502, detail="千问云 API 返回内容无效或服务不可用，请检查模型权限、余额及 JSON 输出能力。") from exc
@@ -299,6 +317,25 @@ async def confirm_resume_profile(resume_id: UUID, request: ProfileConfirmRequest
     }
     _profiles[resume_id] = profile
     return ProfileDraft.model_validate(profile)
+
+
+def _analysis_for(resume_id: UUID) -> dict:
+    profile = _profiles.get(resume_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="未找到当前浏览器的画像")
+    if profile.get("status") != "confirmed":
+        raise HTTPException(status_code=409, detail="请先确认画像，再查看星级分析与职业匹配")
+    return {
+        "resume_id": str(resume_id),
+        **profile_analysis(profile, _resume_blocks.get(resume_id, [])),
+        "data_notice": load_china_demo()["notice"] if _is_china_demo(profile) else "依据用户确认的简历画像生成；个人自述和资历未经过第三方核验。",
+        "careers": career_matches(profile, limit=10),
+    }
+
+
+@app.get(f"{settings.api_prefix}/resumes/{{resume_id}}/analysis")
+async def get_profile_analysis(resume_id: UUID) -> dict:
+    return _analysis_for(resume_id)
 
 
 @app.post(f"{settings.api_prefix}/jobsets", response_model=JobSetResponse, status_code=201)
@@ -364,12 +401,15 @@ async def create_diagnosis(request: DiagnosisRequest) -> DiagnosticReport:
             report["optional_improve"] = advice.optional_improve or report["optional_improve"]
             report["checklist"] = advice.checklist or report["checklist"]
             report["engine"] = "model"
+        except CloudModelError:
+            raise
         except Exception as exc:
             logger.warning("qwen_diagnosis_failed resume_id=%s model=%s", request.resume_id, model_settings(settings).qwen_chat_model)
             raise HTTPException(status_code=502, detail="千问云 API 诊断建议生成失败，请检查 API Key、地域及模型权限") from exc
     elif not _is_china_demo(profile):
         require_qwen_chat()
     report["notice"] = _source_notice(profile, job)
+    report["profile_analysis"] = profile_analysis(profile, _resume_blocks.get(request.resume_id, []))
     _reports[report["report_id"]] = report
     return DiagnosticReport.model_validate(report)
 
@@ -390,6 +430,8 @@ async def create_interview(request: InterviewCreateRequest) -> InterviewSessionR
         try:
             questions = await generate_questions(profile, job, QwenCloudProvider(model_settings(settings)))
             engine = "model"
+        except CloudModelError:
+            raise
         except Exception as exc:
             logger.warning("qwen_interview_question_generation_failed resume_id=%s model=%s", request.resume_id, model_settings(settings).qwen_chat_model)
             raise HTTPException(status_code=502, detail="千问云 API 面试题生成失败，请检查 API Key、地域及模型权限和 JSON 输出能力") from exc
@@ -400,6 +442,7 @@ async def create_interview(request: InterviewCreateRequest) -> InterviewSessionR
     session_id = uuid4()
     _interviews[session_id] = {
         "job_title": job["title"],
+        "profile_analysis": profile_analysis(profile, _resume_blocks.get(request.resume_id, [])),
         "notice": _source_notice(profile, job),
         "engine": engine,
         "questions": questions,
@@ -451,6 +494,8 @@ async def answer_interview(session_id: UUID, request: InterviewAnswerRequest) ->
         try:
             evaluation = await evaluate_answer_with_model(request.answer, question, QwenCloudProvider(model_settings(settings)))
             score, feedback = evaluation.score, evaluation.feedback
+        except CloudModelError:
+            raise
         except Exception as exc:
             logger.warning("qwen_interview_answer_evaluation_failed session_id=%s model=%s", session_id, model_settings(settings).qwen_chat_model)
             raise HTTPException(status_code=502, detail="千问云 API 面试回答评价失败，请检查 API Key、地域及模型权限") from exc
@@ -476,11 +521,17 @@ async def answer_interview(session_id: UUID, request: InterviewAnswerRequest) ->
 
 @app.post(f"{settings.api_prefix}/exports", response_model=ExportArtifactResponse, status_code=201)
 async def create_export(request: ExportRequest) -> ExportArtifactResponse:
-    if request.type == "diagnosis":
+    if request.type == "profile":
+        data = _analysis_for(request.resource_id)
+    elif request.type == "diagnosis":
         report = _reports.get(request.resource_id)
         data = DiagnosticReport.model_validate(report).model_dump(mode="json") if report else None
+        if data is not None and report.get("profile_analysis"):
+            data["profile_analysis"] = report["profile_analysis"]
     else:
         data = _interview_response(request.resource_id).model_dump(mode="json") if request.resource_id in _interviews else None
+        if data is not None and _interviews[request.resource_id].get("profile_analysis"):
+            data["profile_analysis"] = _interviews[request.resource_id]["profile_analysis"]
     if data is None:
         raise HTTPException(status_code=404, detail="Export source not found")
     export_id = uuid4()

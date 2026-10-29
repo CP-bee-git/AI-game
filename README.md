@@ -2,9 +2,15 @@
 
 一个千问 API Key，完成简历解析、能力画像、岗位匹配、简历诊断、模拟面试和报告导出。大模型只调用阿里云百炼 / 通义千问云 API；无需下载模型、GPU、Docker 或模型推理服务。
 
-[在线演示](https://39a4d799.r39.cpolar.top) · [公开源码](https://github.com/CP-bee-git/AI-game)
+[在线演示](https://7e950176.r39.cpolar.top) · [公开源码](https://github.com/CP-bee-git/AI-game) · [开发者说明](docs/DEVELOPMENT.md)
 
 ![CareerPilot 网站界面](docs/preview.png)
+
+<details><summary>查看生成报告样式（合成样例）</summary>
+
+![画像星图与职业报告](docs/report-preview.png)
+
+</details>
 
 ## 启动网站
 
@@ -49,22 +55,26 @@ cp .env.example .env  # 已有 .env 时不要重复覆盖
 
 1. 连接云 API，或载入完全虚构的演示样例。
 2. 阅读数据处理说明，上传 PDF / DOCX / PNG / JPG（最大 10 MB）。
-3. 生成并修正确认能力画像；导入 1–20 条目标岗位。
+3. 生成并确认画像，查看五维星级与职业库匹配的 **10 个具体职业方向**；也可自行导入 1–20 条目标岗位。
 4. 查看匹配分数、匹配依据和技能缺口，针对岗位生成诊断。
-5. 完成多轮文本模拟面试，下载 HTML / JSON 反馈报告。
+5. 完成多轮文本模拟面试，下载画像、诊断和面试的 HTML / JSON 报告；HTML 含星图，可打印为 PDF。
 
 岗位分数使用可解释的技能、学历、城市规则，**不是语义向量相似度或录用概率**。系统不验证学历或材料真伪，不代投简历；反馈需人工判断。
+
+职业方向来自 **O*NET® 31.0 开放职业库的 55 条精选快照**，保留真实职业代码、原文与来源（CC BY 4.0）。这是职业方向探索，不是实时招聘库；中文名为项目翻译。画像星级表示资料与原文证据完整度，不是能力测评。
 
 ## 维护与验证
 
 ```bash
 make stop          # 停止网站、API 和本项目 cpolar 隧道
 make setup         # 只安装依赖
-make smoke         # 后端业务闭环、云请求替身、会话隔离检查
+make smoke         # 云错误分类、业务闭环、职业来源和报告检查
 make check         # Python 编译、前端类型检查与生产构建
 make e2e           # 桌面/手机与配置界面浏览器测试
 python3 scripts/manage.py status
 ```
+
+真实 Key 调用失败时按页面错误码检查地域、额度与权限；开发者可运行 `.venv/bin/python backend/scripts/smoke_flow.py --real` 做一次小额真实 JSON 诊断。未提供真实 Key 时，不会把模拟通过视为账户已验通。
 
 首次运行浏览器测试需 `pnpm --dir frontend exec playwright install chromium`。运行日志在 `.runtime/logs/`；上传文件与业务结果在 `backend/storage/`，均不提交 Git。会话隔离只适合单实例演示；数据库和上传文件持久化，但重启后会话索引会清除，需重新上传；尚无自动删除/保留期管理，公开站点请使用合成或脱敏资料。
 

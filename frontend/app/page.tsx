@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, CheckCircle2, CircleAlert, Cloud, Compass, FileCheck2, FileUp, LockKeyhole, MessageSquare, ScanSearch, ShieldCheck, Sparkles, Unplug } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, CircleAlert, Cloud, Compass, Download, FileUp, LockKeyhole, ScanSearch, ShieldCheck, Sparkles, Unplug } from "lucide-react";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
@@ -30,6 +30,20 @@ type ProfileDraft = {
   preferences: Record<string, unknown>;
   warnings: string[];
   status?: string;
+};
+
+type ProfileAnalysis = {
+  resume_id: string;
+  dimensions: Array<{ name: string; score: number; evidence: string[]; note: string }>;
+  notice: string;
+  careers: {
+    catalog: { id: string; name: string; version: string; source_url: string; license: string; accessed_on: string; notice: string; attribution?: string; scoring_method?: string };
+    total: number;
+    results: Array<{
+      code: string; title: string; original_title: string; description: string; source_url: string;
+      score: number; stars: number; matched_skills: string[]; skill_gaps: string[]; reason: string;
+    }>;
+  };
 };
 
 type JobInput = {
@@ -87,6 +101,13 @@ function errorMessage(detail: unknown, fallback: string): string {
   return fallback;
 }
 
+function StarRating({ score, label }: { score: number; label: string }) {
+  const value = Math.min(5, Math.max(0, score));
+  return <span className="star-rating" role="img" aria-label={`${label}：${value} / 5 星`}>
+    {Array.from({ length: 5 }, (_, index) => <span className="star" aria-hidden="true" key={index}>★<span style={{ width: `${Math.min(1, Math.max(0, value - index)) * 100}%` }}>★</span></span>)}
+  </span>;
+}
+
 export default function Home() {
   const [model, setModel] = useState<ModelConfig | null>(null);
   const [apiState, setApiState] = useState<"checking" | "online" | "offline">("checking");
@@ -106,6 +127,10 @@ export default function Home() {
   const [generatingProfile, setGeneratingProfile] = useState(false);
   const [skillText, setSkillText] = useState("");
   const [confirmingProfile, setConfirmingProfile] = useState(false);
+  const [analysis, setAnalysis] = useState<ProfileAnalysis | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+  const analysisRequest = useRef<AbortController | null>(null);
   const [jobLines, setJobLines] = useState("");
   const [jobsetId, setJobsetId] = useState<string | null>(null);
   const [jobCount, setJobCount] = useState(0);
@@ -150,7 +175,10 @@ export default function Home() {
       }
     }
     void initialize();
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      analysisRequest.current?.abort();
+    };
   }, []);
 
   async function refreshModel() {
@@ -207,7 +235,33 @@ export default function Home() {
     }
   }
 
+  function resetAnalysis() {
+    analysisRequest.current?.abort();
+    setAnalysis(null);
+    setAnalyzing(false);
+    setAnalysisError("");
+  }
+
+  async function loadAnalysis(resumeId: string) {
+    analysisRequest.current?.abort();
+    const controller = new AbortController();
+    analysisRequest.current = controller;
+    setAnalyzing(true);
+    setAnalysisError("");
+    try {
+      const response = await fetch(`${apiBase}/resumes/${resumeId}/analysis`, { credentials: "same-origin", cache: "no-store", signal: controller.signal });
+      const data = await response.json();
+      if (!response.ok) throw new Error(errorMessage(data.detail, "画像分析暂时不可用，请重试。"));
+      if (!controller.signal.aborted) setAnalysis(data);
+    } catch (analysisError) {
+      if (!controller.signal.aborted) setAnalysisError(analysisError instanceof Error ? analysisError.message : "画像分析暂时不可用，请重试。");
+    } finally {
+      if (!controller.signal.aborted) setAnalyzing(false);
+    }
+  }
+
   async function loadDemo() {
+    resetAnalysis();
     setLoadingDemo(true);
     setError("");
     try {
@@ -234,7 +288,7 @@ export default function Home() {
     }
   }
 
-  async function exportReport(type: "diagnosis" | "interview", resourceId: string, format: "html" | "json") {
+  async function exportReport(type: "profile" | "diagnosis" | "interview", resourceId: string, format: "html" | "json") {
     setExporting(true);
     setError("");
     try {
@@ -268,6 +322,7 @@ export default function Home() {
     if (!file) return;
     setUploading(true);
     setError("");
+    resetAnalysis();
     setUpload(null);
     setProfile(null);
     setSkillText("");
@@ -323,6 +378,7 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(errorMessage(data.detail, "画像确认失败"));
       setProfile(data);
+      await loadAnalysis(upload.resume_id);
     } catch (confirmError) {
       setError(confirmError instanceof Error ? confirmError.message : "画像确认失败");
     } finally {
@@ -438,34 +494,21 @@ export default function Home() {
           <span className="brand-mark"><Compass size={22} strokeWidth={1.8} /></span>
           <span>CareerPilot<small>就业罗盘</small></span>
         </a>
-        <nav className="topnav" aria-label="主导航"><a href="#workspace">求职工作台</a><a href="#cloud-config">模型连接</a><a href="/privacy">隐私与数据</a></nav>
+        <nav className="topnav" aria-label="主导航"><a href="#workspace">工作台</a><a href="#analysis">职业方向</a><a href="#cloud-config">模型连接</a></nav>
         <div className="topbar-meta" aria-live="polite">
           <span className={`status-dot ${apiState}`} />
-          <span>{apiState === "online" ? "服务已就绪" : apiState === "offline" ? "服务暂未连接" : "连接中"}</span>
+          <span>{apiState === "online" ? model?.chat_configured ? "云模型已连接" : "服务就绪 · 待连接模型" : apiState === "offline" ? "服务暂未连接" : "连接中"}</span>
         </div>
       </header>
 
-      <section className="hero-grid">
-        <div className="intro">
-          <p className="hero-badge"><span />QWEN POWERED · 你的求职行动空间</p>
-          <h1>看见你的优势。<br /><em>走向下一站。</em></h1>
-          <p className="intro-copy">把简历里的经历，变成下一份机会的线索。<br className="desktop-break" />从能力画像到模拟面试，让每一步都有据可循。</p>
-          <div className="hero-actions"><a className="primary-button compact" href="#workspace">开启求职之旅<ArrowRight size={17} /></a><a className="text-link" href="#demo">先体验完整样例 <ArrowRight size={15} /></a></div>
-          <div className="hero-points"><span><Check size={14} />一枚 API Key 即可开始</span><span><Check size={14} />报告随时下载</span></div>
-        </div>
-        <div className="journey-card" aria-label="求职流程概览">
-          <div className="journey-top"><span><span className="live-dot" />YOUR NEXT CHAPTER</span><Compass size={22} strokeWidth={1.4} /></div>
-          <div className="journey-caption">从经历，到机会<span>让努力拥有清晰的方向</span></div>
-          <div className="journey-track"><span /><i /><span /><i /><span /></div>
-          <div className="journey-stages"><span>发现优势</span><span>连接岗位</span><span>自信表达</span></div>
-          <div className="journey-items"><div><span className="journey-icon"><FileCheck2 size={19} /></span><div><strong>一份简历，读懂你的能力</strong><small>提取技能与经历，保留你的确认权</small></div><CheckCircle2 size={17} /></div><div><span className="journey-icon"><ScanSearch size={19} /></span><div><strong>每个匹配，都看得到依据</strong><small>呈现能力命中、缺口与改进建议</small></div><ArrowRight size={17} /></div><div><span className="journey-icon"><MessageSquare size={19} /></span><div><strong>练习表达，准备下一场面试</strong><small>逐题练习，收获可以行动的反馈</small></div><ArrowRight size={17} /></div></div>
-          <div className="journey-bottom"><span>当前进度</span><strong>{interview?.status === "completed" ? "本轮已完成" : steps[activeStep]}</strong><span>{String(activeStep + 1).padStart(2, "0")} / 05</span></div>
-        </div>
+      <section className="workspace-intro" aria-labelledby="workspace-title">
+        <div><p className="eyebrow">CAREER WORKSPACE</p><h1 id="workspace-title">下一步，从了解自己开始。</h1><p>读懂简历，连接职业方向，准备下一次机会。</p></div>
+        <a className="text-link" href="#workspace">开始分析 <ArrowRight size={16} /></a>
       </section>
 
       <nav className="stepper" aria-label="求职流程">
         {steps.map((step, index) => (
-          <a href={index < 2 || profile?.status !== "confirmed" ? "#workspace" : "#jobs"} className={`step ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} key={step}>
+          <a href={index < 2 || profile?.status !== "confirmed" ? "#workspace" : index === 2 ? "#analysis" : "#jobs"} className={`step ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} key={step}>
             <span className="step-index">{index < activeStep ? <Check size={14} /> : String(index + 1).padStart(2, "0")}</span>
             <span>{step}</span>
             {index < steps.length - 1 && <ArrowRight size={14} className="step-arrow" />}
@@ -474,11 +517,12 @@ export default function Home() {
       </nav>
 
       <section className="cloud-panel" id="cloud-config" aria-labelledby="cloud-title">
-        <div className="cloud-intro"><span className="section-icon"><Cloud size={22} /></span><p className="eyebrow">连接你的模型</p><h2 id="cloud-title">一枚密钥，<br />开启千问的能力。</h2><p>使用阿里云百炼 / 千问 API Key。选择与密钥一致的服务区域，验证后即可生成画像、简历诊断和面试反馈。</p><div className="cloud-state"><span className={`status-dot ${model?.chat_configured ? "online" : "checking"}`} /><span>{model?.chat_configured ? `已连接 · ${model.model}` : "还没有 API Key？可先使用下方合成样例"}</span></div></div>
+        <div className="cloud-intro"><span className="section-icon"><Cloud size={21} /></span><p className="eyebrow">MODEL CONNECTION</p><h2 id="cloud-title">连接云端模型</h2><p>输入阿里云百炼 / 千问 API Key，选择密钥所属区域。验证成功后，即可处理你的简历。</p><div className="cloud-state"><span className={`status-dot ${model?.chat_configured ? "online" : "checking"}`} /><span>{model?.chat_configured ? `已连接 · ${model.model}` : "尚未连接 · 可先体验合成样例"}</span></div></div>
         <form className="cloud-form" onSubmit={configureModel} autoComplete="off">
           <div className="cloud-form-head"><strong><LockKeyhole size={16} />云端模型配置</strong><span className={`connection-badge ${model?.chat_configured ? "connected" : ""}`}>{model?.chat_configured ? "连接已验证" : "等待连接"}</span></div>
           <label className="field-label" htmlFor="api-key">千问 / 阿里云 API Key</label>
-          <input className="text-input key-input" id="api-key" name="api-key" type="password" autoComplete="new-password" spellCheck={false} value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="请输入你的 API Key" required maxLength={512} disabled={configuring || clearingConfig} />
+          <input className="text-input key-input" id="api-key" name="api-key" type="password" aria-describedby="api-key-help" autoComplete="new-password" spellCheck={false} value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="请输入你的 API Key" required maxLength={512} disabled={configuring || clearingConfig} />
+          <p className="key-help" id="api-key-help">使用百炼通用 API Key，密钥与服务区域须一致。阿里云 AccessKey、Coding / Token 套餐专属密钥不适用。</p>
           <div className="config-fields"><div><label className="field-label" htmlFor="region">服务区域</label><select className="text-input" id="region" value={region} onChange={(event) => { configFieldsEdited.current.region = true; setRegion(event.target.value as keyof typeof regions); }} disabled={configuring || clearingConfig}>{Object.entries(regions).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div><div><label className="field-label" htmlFor="model-name">聊天模型</label><input className="text-input" id="model-name" list="qwen-models" value={modelName} onChange={(event) => { configFieldsEdited.current.model = true; setModelName(event.target.value); }} placeholder="qwen-plus" required maxLength={100} disabled={configuring || clearingConfig} /><datalist id="qwen-models"><option value="qwen-plus" /><option value="qwen-turbo" /><option value="qwen-max" /></datalist></div></div>
           <p className="config-privacy"><ShieldCheck size={14} /><span>密钥只临时保存在服务器内存，仅用于当前浏览器会话；不会写入浏览器持久存储。云 API 调用按你的阿里云账户计费。</span></p>
           <div className="action-row"><button className="primary-button compact" type="submit" disabled={apiState !== "online" || !apiKey.trim() || !modelName.trim() || configuring || clearingConfig}>{configuring ? "正在验证连接…" : model?.chat_configured ? "验证并更新连接" : "验证并连接"}<ArrowRight size={16} /></button>{model?.chat_configured && <button className="secondary-button compact" type="button" onClick={clearModel} disabled={configuring || clearingConfig}><Unplug size={15} />{clearingConfig ? "清除中…" : "清除临时密钥"}</button>}</div>
@@ -489,11 +533,11 @@ export default function Home() {
 
       <section className="demo-panel" id="demo" aria-label="中国数据演示">
         <div>
-          <p className="eyebrow">零门槛体验 · 合成样例</p>
-          <h2>先试一试，再开启自己的旅程</h2>
-          <p>{demoInfo?.notice ?? "加载中国岗位样例和一份虚构中文简历，确认画像后即可匹配、诊断和模拟面试。"}</p>
+          <p className="eyebrow">QUICK PREVIEW</p>
+          <h2>用一份合成简历，体验完整流程</h2>
+          <p>无需密钥。先确认样例画像，再查看职业方向、岗位匹配与面试反馈。</p>
           <p className="demo-disclosure">样例画像为预先编写，不是模型抽取结果；本轮匹配、诊断和面试反馈使用基础规则，可在未连接模型时演示。</p>
-          {demoInfo && <div className="source-links">{demoInfo.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.title} ↗</a>)}</div>}
+          {demoInfo && <details className="demo-sources"><summary>样例说明与来源</summary><p>{demoInfo.notice}</p><div className="source-links">{demoInfo.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.title} ↗</a>)}</div></details>}
         </div>
         <div className="demo-actions">
           <button className="primary-button compact" disabled={apiState !== "online" || loadingDemo || uploading} onClick={loadDemo} type="button">{loadingDemo ? "加载中..." : "加载中国样例 · 合成简历"}<ArrowRight size={16} /></button>
@@ -529,7 +573,8 @@ export default function Home() {
           <div className="panel-title"><ScanSearch size={17} /><span>你的求职概览</span></div>
           <div className="info-list">
             <div><span>画像状态</span><strong>{profile?.status === "confirmed" ? "已确认" : profile ? "待确认" : upload ? "可生成" : "尚未建立"}</strong></div>
-            <div><span>岗位清单</span><strong>{jobCount} / 20</strong></div>
+            <div><span>职业方向</span><strong>{analysis ? `${analysis.careers.results.length} 个参考方向` : "确认画像后生成"}</strong></div>
+            <div><span>目标岗位</span><strong>{jobCount} / 20</strong></div>
             <div><span>面试状态</span><strong>{interview?.status === "completed" ? "已完成" : interview ? "进行中" : "未开始"}</strong></div>
           </div>
           <div className="model-card">
@@ -540,8 +585,36 @@ export default function Home() {
         </aside>
       </section>
 
+      {profile?.status === "confirmed" && <section className="analysis-section" id="analysis" aria-labelledby="analysis-title" aria-busy={analyzing}>
+        <div className="section-heading"><div><p className="eyebrow">02 / PROFILE & CAREERS</p><h2 id="analysis-title">画像与职业方向</h2></div><span className="stage-tag">已确认的简历证据</span></div>
+        {analyzing && <p className="loading-copy" role="status">正在整理画像星图与职业库匹配…</p>}
+        {analysisError && <div className="analysis-retry"><div className="notice error" role="alert"><CircleAlert size={16} /><span>{analysisError}</span></div><button className="secondary-button compact" type="button" onClick={() => upload && loadAnalysis(upload.resume_id)} disabled={analyzing}>重新加载分析</button></div>}
+        {analysis && <>
+          <div className="profile-analysis">
+            <div className="analysis-heading"><h3>画像星图</h3><span>简历证据覆盖程度 · 5 星制</span></div>
+            <div className="dimension-grid">{analysis.dimensions.map((dimension) => <article className="dimension" key={dimension.name}>
+              <div className="dimension-head"><h4>{dimension.name}</h4><StarRating score={dimension.score} label={dimension.name} /></div>
+              <p>{dimension.note}</p>
+              {dimension.evidence.length > 0 && <details><summary>查看简历依据</summary><ul>{dimension.evidence.map((item, index) => <li key={index}>{item}</li>)}</ul></details>}
+            </article>)}</div>
+            <p className="analysis-notice">{analysis.notice}</p>
+            {upload && <div className="action-row"><button className="secondary-button compact" disabled={exporting} type="button" onClick={() => exportReport("profile", upload.resume_id, "html")}><Download size={15} />下载完整画像报告 HTML</button><button className="secondary-button compact" disabled={exporting} type="button" onClick={() => exportReport("profile", upload.resume_id, "json")}>导出画像 JSON</button></div>}
+          </div>
+          <div className="career-section">
+            <div className="analysis-heading"><div><h3>10 个具体职业参考</h3><p>从职业库连接你的技能与可能的方向。</p></div><span className="stage-tag">{analysis.careers.results.length} 个方向</span></div>
+            <div className="career-list">{analysis.careers.results.map((career, index) => <article className="career-row" key={career.code}>
+              <span className="career-rank">{String(index + 1).padStart(2, "0")}</span>
+              <div className="career-content"><div className="career-title"><h4>{career.title}</h4><span>{career.original_title} · {career.code}</span></div><p className="career-reason">{career.reason}</p><div className="career-skills"><p><b>技能命中</b>{career.matched_skills.join("、") || "暂无明确证据"}</p><p><b>待补充</b>{career.skill_gaps.join("、") || "暂无已识别缺口"}</p></div><details className="career-source"><summary>职业定义与来源</summary><p lang="en">{career.description}</p><a href={career.source_url} target="_blank" rel="noreferrer">查看职业库原始条目 ↗</a></details></div>
+              <div className="career-fit"><strong>{Math.round(career.score)}<small>/ 100</small></strong><StarRating score={career.stars} label={`${career.title}匹配证据`} /><span>证据匹配分</span></div>
+            </article>)}</div>
+            <div className="catalog-note"><strong>{analysis.careers.catalog.name} · {analysis.careers.catalog.version}</strong><p>{analysis.careers.catalog.notice}</p><p>职业库共 {analysis.careers.total} 个条目 · {analysis.careers.catalog.license} · 获取日期 {analysis.careers.catalog.accessed_on}</p><a href={analysis.careers.catalog.source_url} target="_blank" rel="noreferrer">职业库来源 ↗</a><details><summary>评分方法与许可声明</summary><p>{analysis.careers.catalog.scoring_method}</p><p lang="en">{analysis.careers.catalog.attribution}</p></details></div>
+          </div>
+        </>}
+      </section>}
+
       {profile?.status === "confirmed" && <section className="next-stage" id="jobs">
-        <div className="section-heading"><div><p className="eyebrow">03 / 发现合适的机会</p><h2>岗位匹配工作台</h2></div><span className="stage-tag">{jobCount ? `${jobCount} 个岗位` : "待导入"}</span></div>
+        <div className="section-heading"><div><p className="eyebrow">03 / TARGET JOBS</p><h2>目标岗位与求职练习</h2></div><span className="stage-tag">{jobCount ? `${jobCount} 个岗位` : "待导入"}</span></div>
+        <p className="section-description">这里使用你导入的招聘岗位 JD，单独分析岗位要求，并生成诊断与面试练习。合成样例岗位仅用于功能演示。</p>
         {importedJobs.length > 0 && <details className="job-preview"><summary>已载入 {importedJobs.length} 个岗位，查看岗位与条件</summary><div className="job-table-scroll"><table><thead><tr><th>岗位 / 单位</th><th>地点</th><th>学历要求</th><th>必需技能</th></tr></thead><tbody>{importedJobs.map((job, index) => <tr key={`${job.title}-${index}`}><td>{job.title}<small>{job.company}</small></td><td>{job.location}</td><td>{job.education_required ?? "未注明"}</td><td>{job.required_skills.join("、") || "未注明"}</td></tr>)}</tbody></table></div></details>}
         <p className="field-help">{jobsetId ? "岗位已准备好，可直接开始匹配。也可输入新清单替换：" : "每行一条："}岗位名称 | 公司 | 城市 | 必需技能（逗号分隔）。</p>
         <textarea className="job-input" aria-label="岗位清单" value={jobLines} onChange={(event) => setJobLines(event.target.value)} placeholder="数据分析师 | 示例公司 | 上海 | Python, SQL\n产品运营 | 示例科技 | 杭州 | 用户研究, Excel" rows={5} />
@@ -581,7 +654,7 @@ export default function Home() {
         </div>}
       </section>}
 
-      <footer><a className="brand footer-brand" href="/"><Compass size={18} /><span>CareerPilot <small>就业罗盘</small></span></a><span>让每一步求职，都更有方向。</span><a href="/privacy">隐私与数据处理说明 <ArrowRight size={13} /></a></footer>
+      <footer><a className="brand footer-brand" href="/"><Compass size={18} /><span>CareerPilot <small>就业罗盘</small></span></a><span>基于简历证据的职业探索工具 · 结果供求职参考</span><a href="/privacy">隐私与数据处理说明 <ArrowRight size={13} /></a></footer>
     </main>
   );
 }
