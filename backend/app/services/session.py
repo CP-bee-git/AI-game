@@ -69,13 +69,21 @@ def allow_configuration_attempt(ip: str) -> bool:
 
 
 class BrowserSessionMiddleware:
-    def __init__(self, app, api_prefix: str = "/api/v1"):
+    def __init__(self, app, api_prefix: str = "/api/v1", public_paths: tuple[str, ...] = ()):
         self.app = app
         self.configuration_path = f"{api_prefix}/model/configure"
+        self.public_paths = frozenset(public_paths)
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        if scope.get("method") in {"GET", "HEAD"} and scope.get("path") in self.public_paths:
+            async def public_send(message):
+                if message["type"] == "http.response.start":
+                    message["headers"] = [*message.get("headers", []), (b"cache-control", b"no-store")]
+                await send(message)
+
+            return await self.app(scope, receive, public_send)
         now = monotonic()
         for key, session in list(_sessions.items()):
             if session.touched < now - SESSION_TTL:

@@ -17,7 +17,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: "pnpm dev --hostname localhost",
+      command: process.env.CI ? "pnpm start --hostname localhost" : "pnpm dev --hostname localhost",
       url: "http://localhost:3000",
       timeout: 180_000,
       reuseExistingServer: !process.env.CI,

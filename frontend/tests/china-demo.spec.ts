@@ -54,3 +54,33 @@ test("real resume upload requires the data-processing acknowledgement", async ({
   await upload.click();
   await expect(page.locator(".upload-section .notice.success")).toContainText("已接收");
 });
+
+test("a fresh browser establishes its session before delayed demo metadata and profile confirmation", async ({ page }) => {
+  let releaseDemo!: () => void;
+  let metadataStarted!: () => void;
+  const metadataGate = new Promise<void>((resolve) => { releaseDemo = resolve; });
+  const metadataRequest = new Promise<void>((resolve) => { metadataStarted = resolve; });
+  let metadataCookie = "";
+  await page.route("**/api/v1/demo/china", async (route) => {
+    metadataCookie = route.request().headers().cookie ?? "";
+    metadataStarted();
+    await metadataGate;
+    await route.continue();
+  });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await metadataRequest;
+  const start = page.getByRole("button", { name: "加载中国样例 · 合成简历" });
+  try {
+    expect(metadataCookie).toContain("careerpilot_session=");
+    await expect(start).toBeDisabled();
+  } finally {
+    releaseDemo();
+  }
+  await expect(start).toBeEnabled();
+  await start.click();
+  await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
+  const confirmed = page.waitForResponse((response) => response.url().includes("/profile/confirm") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  expect((await confirmed).ok()).toBe(true);
+  await expect(page.getByRole("button", { name: "开始匹配" })).toBeVisible();
+});

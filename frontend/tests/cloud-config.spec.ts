@@ -73,21 +73,19 @@ test("cloud settings remain usable on a narrow phone", async ({ page }) => {
 test("delayed initial settings preserve the region and model the user already edited", async ({ page }) => {
   let releaseInitialConfig!: () => void;
   const initialConfigGate = new Promise<void>((resolve) => { releaseInitialConfig = resolve; });
-  let reads = 0;
+  let configured = false;
   let posted: Record<string, unknown> | null = null;
   const saved = { ...disconnected, chat_configured: true, vision_configured: true };
   const updated = { ...saved, region: "singapore", model: "qwen-turbo" };
   await page.route("**/api/v1/health", (route) => route.fulfill({ json: { status: "ok" } }));
   await page.route("**/api/v1/model-config", async (route) => {
-    if (reads++ === 0) {
-      await initialConfigGate;
-      await route.fulfill({ json: saved });
-    } else {
-      await route.fulfill({ json: updated });
-    }
+    // Strict Mode may start initialization twice; hold both initial reads.
+    if (!configured) await initialConfigGate;
+    await route.fulfill({ json: configured ? updated : saved });
   });
   await page.route("**/api/v1/model/configure", async (route) => {
     posted = route.request().postDataJSON();
+    configured = true;
     await route.fulfill({ json: updated });
   });
   const initialRequest = page.waitForRequest("**/api/v1/model-config");

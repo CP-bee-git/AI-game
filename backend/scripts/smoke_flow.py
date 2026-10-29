@@ -75,7 +75,17 @@ def run() -> None:
         main.configure_state(state_path)
         try:
             with patch("app.services.llm.AsyncOpenAI", async_client), patch("app.services.llm.OpenAI", sync_client), TestClient(main.app) as client, TestClient(main.app) as stranger:
-                assert client.get("/api/v1/model-config").json()["chat_configured"] is False
+                public_paths = ("/api/v1/health", "/api/v1/demo/china", "/api/v1/demo/china/resume")
+                for path in public_paths:
+                    public = client.get(path)
+                    assert public.status_code == 200 and "set-cookie" not in public.headers, (path, public.headers)
+                assert not _sessions and not client.cookies, "Public GETs must not create browser sessions"
+                initial_config = client.get("/api/v1/model-config")
+                assert initial_config.json()["chat_configured"] is False and "set-cookie" in initial_config.headers
+                initial_cookie = client.cookies.get("careerpilot_session")
+                for path in public_paths:
+                    public = client.get(path)
+                    assert "set-cookie" not in public.headers and client.cookies.get("careerpilot_session") == initial_cookie, path
                 assert client.post("/api/v1/model/ping").status_code == 503
                 oversized = client.post("/api/v1/model/configure", content=json.dumps({"api_key": "x" * 5000}), headers={"Content-Type": "application/json"})
                 assert oversized.status_code == 413 and "x" * 100 not in oversized.text, oversized.text

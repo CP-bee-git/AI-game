@@ -54,7 +54,11 @@ settings = get_settings()
 logger = logging.getLogger("careerpilot.api")
 storage = LocalStorage(settings.local_storage_dir)
 app = FastAPI(title=settings.app_name, version="0.1.0")
-app.add_middleware(BrowserSessionMiddleware, api_prefix=settings.api_prefix)
+app.add_middleware(
+    BrowserSessionMiddleware,
+    api_prefix=settings.api_prefix,
+    public_paths=tuple(f"{settings.api_prefix}{path}" for path in ("/health", "/demo/china", "/demo/china/resume")),
+)
 
 def configure_state(path: Path | None = None) -> None:
     global _resume_blocks, _profiles, _jobsets, _interviews, _reports, _exports, _match_runs, _consents

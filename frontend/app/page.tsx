@@ -126,17 +126,31 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([fetch(`${apiBase}/health`), fetch(`${apiBase}/model-config`)]).then(async ([health, config]) => {
-      if (!health.ok || !config.ok) throw new Error("API offline");
-      setApiState("online");
-      const configuration: ModelConfig = await config.json();
-      setModel(configuration);
-      if (configuration.region && !configFieldsEdited.current.region) setRegion(configuration.region);
-      if (configuration.chat_configured && !configFieldsEdited.current.model) setModelName(configuration.model);
-    }).catch(() => setApiState("offline"));
-    fetch(`${apiBase}/demo/china`).then(async (response) => {
-      if (response.ok) setDemoInfo(await response.json());
-    }).catch(() => {});
+    const controller = new AbortController();
+    const options = { signal: controller.signal, credentials: "same-origin" as const, cache: "no-store" as const };
+    async function initialize() {
+      try {
+        // Establish one browser session before any parallel API requests.
+        const config = await fetch(`${apiBase}/model-config`, options);
+        if (!config.ok) throw new Error("API offline");
+        const configuration: ModelConfig = await config.json();
+        if (controller.signal.aborted) return;
+        setModel(configuration);
+        if (configuration.region && !configFieldsEdited.current.region) setRegion(configuration.region);
+        if (configuration.chat_configured && !configFieldsEdited.current.model) setModelName(configuration.model);
+        const [health, demo] = await Promise.all([
+          fetch(`${apiBase}/health`, options),
+          fetch(`${apiBase}/demo/china`, options),
+        ]);
+        if (!health.ok) throw new Error("API offline");
+        if (demo.ok) setDemoInfo(await demo.json());
+        if (!controller.signal.aborted) setApiState("online");
+      } catch {
+        if (!controller.signal.aborted) setApiState("offline");
+      }
+    }
+    void initialize();
+    return () => controller.abort();
   }, []);
 
   async function refreshModel() {
@@ -467,7 +481,7 @@ export default function Home() {
           <input className="text-input key-input" id="api-key" name="api-key" type="password" autoComplete="new-password" spellCheck={false} value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="请输入你的 API Key" required maxLength={512} disabled={configuring || clearingConfig} />
           <div className="config-fields"><div><label className="field-label" htmlFor="region">服务区域</label><select className="text-input" id="region" value={region} onChange={(event) => { configFieldsEdited.current.region = true; setRegion(event.target.value as keyof typeof regions); }} disabled={configuring || clearingConfig}>{Object.entries(regions).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div><div><label className="field-label" htmlFor="model-name">聊天模型</label><input className="text-input" id="model-name" list="qwen-models" value={modelName} onChange={(event) => { configFieldsEdited.current.model = true; setModelName(event.target.value); }} placeholder="qwen-plus" required maxLength={100} disabled={configuring || clearingConfig} /><datalist id="qwen-models"><option value="qwen-plus" /><option value="qwen-turbo" /><option value="qwen-max" /></datalist></div></div>
           <p className="config-privacy"><ShieldCheck size={14} /><span>密钥只临时保存在服务器内存，仅用于当前浏览器会话；不会写入浏览器持久存储。云 API 调用按你的阿里云账户计费。</span></p>
-          <div className="action-row"><button className="primary-button compact" type="submit" disabled={!apiKey.trim() || !modelName.trim() || configuring || clearingConfig}>{configuring ? "正在验证连接…" : model?.chat_configured ? "验证并更新连接" : "验证并连接"}<ArrowRight size={16} /></button>{model?.chat_configured && <button className="secondary-button compact" type="button" onClick={clearModel} disabled={configuring || clearingConfig}><Unplug size={15} />{clearingConfig ? "清除中…" : "清除临时密钥"}</button>}</div>
+          <div className="action-row"><button className="primary-button compact" type="submit" disabled={apiState !== "online" || !apiKey.trim() || !modelName.trim() || configuring || clearingConfig}>{configuring ? "正在验证连接…" : model?.chat_configured ? "验证并更新连接" : "验证并连接"}<ArrowRight size={16} /></button>{model?.chat_configured && <button className="secondary-button compact" type="button" onClick={clearModel} disabled={configuring || clearingConfig}><Unplug size={15} />{clearingConfig ? "清除中…" : "清除临时密钥"}</button>}</div>
           {configError && <div className="notice error" role="alert"><CircleAlert size={16} /><span>{configError}</span></div>}
           {configNotice && <div className="notice success" role="status"><CheckCircle2 size={16} /><span>{configNotice}</span></div>}
         </form>
@@ -482,7 +496,7 @@ export default function Home() {
           {demoInfo && <div className="source-links">{demoInfo.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.title} ↗</a>)}</div>}
         </div>
         <div className="demo-actions">
-          <button className="primary-button compact" disabled={loadingDemo || uploading} onClick={loadDemo} type="button">{loadingDemo ? "加载中..." : "加载中国样例 · 合成简历"}<ArrowRight size={16} /></button>
+          <button className="primary-button compact" disabled={apiState !== "online" || loadingDemo || uploading} onClick={loadDemo} type="button">{loadingDemo ? "加载中..." : "加载中国样例 · 合成简历"}<ArrowRight size={16} /></button>
           <a className="secondary-button compact" href={`${apiBase}/demo/china/resume`} download>下载合成简历 DOCX</a>
         </div>
       </section>
@@ -501,7 +515,7 @@ export default function Home() {
               <input id="resume" name="resume" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg" onChange={(event) => setSelectedFilename(event.target.files?.[0]?.name ?? "")} required aria-label="选择简历文件" />
             </label>
             <label className="privacy-consent"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span>上传简历前，请阅读<a href="/privacy">数据处理说明</a>。图片及扫描件由千问云端视觉模型识别；生成画像、诊断和面试时，相关文本会发送至你选择区域的阿里云服务。请先脱敏。</span></label>
-            <button className="primary-button" disabled={uploading || !privacyAccepted || !selectedFilename} type="submit">
+            <button className="primary-button" disabled={apiState !== "online" || uploading || !privacyAccepted || !selectedFilename} type="submit">
               {uploading ? "上传中..." : "上传并解析"}<ArrowRight size={17} />
             </button>
           </form>
