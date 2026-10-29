@@ -1,0 +1,56 @@
+import { expect, test } from "@playwright/test";
+
+test("Chinese synthetic demo completes matching, diagnosis, interview and downloads", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
+  await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
+  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await page.getByRole("button", { name: "开始匹配" }).click();
+  await expect(page.locator(".match-row")).toHaveCount(10);
+  await expect(page.locator(".match-row").first()).toContainText("数据分析助理");
+  const biRow = page.locator(".match-row").filter({ hasText: "BI报表助理（演示）" });
+  await biRow.getByRole("button", { name: "诊断", exact: true }).click();
+  await expect(page.locator(".report-panel")).toContainText("powerbi");
+  const reportDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载诊断报告 HTML" }).click();
+  expect((await reportDownload).suggestedFilename()).toBe("careerpilot-diagnosis.html");
+  await biRow.getByRole("button", { name: "面试", exact: true }).click();
+  for (let index = 0; index < 6; index++) {
+    await expect(page.locator(".interview-turn")).toHaveCount(index);
+    await page.locator(".interview-panel textarea").fill("这是虚构候选人的演示回答，我使用Python、SQL和Excel处理10万条合成数据并制作8张图表，负责清洗、指标核对与数据可视化；尚未掌握Power BI，需要继续学习。所有项目和数字均为合成数据，不代表真实经历。");
+    await page.getByRole("button", { name: "提交回答" }).click();
+  }
+  await expect(page.locator(".interview-turn")).toHaveCount(6);
+  await expect(page.locator(".interview-summary")).toContainText("规则演示评分");
+  const interviewDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载面试反馈 HTML" }).click();
+  expect((await interviewDownload).suggestedFilename()).toBe("careerpilot-interview.html");
+});
+
+test("China demo loads on a phone without horizontal overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
+  await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("real resume upload requires the data-processing acknowledgement", async ({ page, request }) => {
+  await page.goto("/");
+  const upload = page.getByRole("button", { name: "上传并解析" });
+  await expect(upload).toBeDisabled();
+  await page.getByRole("link", { name: "数据处理说明", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /你的简历如何被处理/ })).toBeVisible();
+  await page.goto("/");
+  const resume = await request.get("/api/v1/demo/china/resume");
+  expect(resume.ok()).toBe(true);
+  await page.locator("#resume").setInputFiles({
+    name: "synthetic-resume.docx",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    buffer: await resume.body(),
+  });
+  await page.getByRole("checkbox").check();
+  await expect(upload).toBeEnabled();
+  await upload.click();
+  await expect(page.locator(".upload-section .notice.success")).toContainText("已接收");
+});

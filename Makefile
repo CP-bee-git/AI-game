@@ -1,15 +1,24 @@
-.PHONY: dev-api dev-web check smoke
+.PHONY: setup start public stop smoke check e2e
 
-dev-api:
-	.venv/bin/uvicorn app.main:app --app-dir backend --reload --host 0.0.0.0 --port 8000
+setup:
+	./start.sh --setup-only
 
-dev-web:
-	cd frontend && pnpm dev
+start:
+	./start.sh
+
+public:
+	./start.sh --public
+
+stop:
+	python3 scripts/manage.py stop
 
 smoke:
 	PYTHONPATH=backend .venv/bin/python backend/scripts/smoke_flow.py
 
 check:
-	.venv/bin/python -m compileall backend/app
-	cd frontend && pnpm lint
+	.venv/bin/python -m compileall -q backend/app backend/scripts scripts
+	cd frontend && pnpm exec next typegen && pnpm lint && pnpm build
+	git diff --check
 
+e2e:
+	cd frontend && pnpm test:e2e

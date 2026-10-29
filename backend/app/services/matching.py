@@ -60,7 +60,9 @@ def match_jobs(profile: dict, jobs: list[dict]) -> list[dict]:
         preferred_score = 100 if not preferred else len(matched_preferred) / len(preferred) * 100
         skill_score = required_score * 0.8 + preferred_score * 0.2
         preference_score = 0 if location_fail else 100
-        total = round(skill_score * 0.65 + preference_score * 0.15 + (100 if not education_fail else 0) * 0.2, 2)
+        education_score = 0 if education_fail else 100
+        total = round(skill_score * 0.65 + preference_score * 0.15 + education_score * 0.2, 2)
+        breakdown = {"skill_coverage": round(skill_score, 2), "education_match": education_score, "preference_fit": preference_score}
         results.append({
             "job_title": job["title"],
             "company": job.get("company", "未填写"),
@@ -68,12 +70,7 @@ def match_jobs(profile: dict, jobs: list[dict]) -> list[dict]:
             "eligible": not hard_fail_reasons,
             "hard_fail_reasons": hard_fail_reasons,
             "total_score": total,
-            "score_breakdown": {
-                "skill_coverage": round(skill_score, 2),
-                "semantic_similarity": round(skill_score, 2),
-                "education_match": 0 if education_fail else 100,
-                "preference_fit": preference_score,
-            },
+            "score_breakdown": breakdown,
             "matched_skills": matched_required + matched_preferred,
             "skill_gaps": gaps,
             "evidence": [f"画像技能命中：{', '.join(matched_required)}"] if matched_required else [],

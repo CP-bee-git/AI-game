@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 
 class HealthResponse(BaseModel):
@@ -14,10 +14,28 @@ class HealthResponse(BaseModel):
 
 class ModelConfigResponse(BaseModel):
     provider: str
-    base_url: str
     model: str
-    embedding_model: str
-    embedding_dimensions: int
+    image_ocr: str
+    matching: str
+    chat_configured: bool
+    vision_configured: bool
+    region: Literal["china", "singapore"] = "china"
+
+
+class ModelConfigureRequest(BaseModel):
+    api_key: SecretStr = Field(min_length=8, max_length=512)
+    region: Literal["china", "singapore"] = "china"
+    model: str = Field(default="qwen-plus", pattern=r"^qwen[a-zA-Z0-9._-]{0,95}$")
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("api_key", mode="before")
+    @classmethod
+    def validate_api_key(cls, value):
+        if isinstance(value, str):
+            value = value.strip()
+            if not value.isascii() or not all(char.isalnum() or char in "-_" for char in value):
+                raise ValueError("API key 格式无效")
+        return value
 
 
 class TaskStatus(BaseModel):
@@ -74,6 +92,8 @@ class JobInput(BaseModel):
     preferred_skills: list[str] = Field(default_factory=list, max_length=50)
     responsibilities: list[str] = Field(default_factory=list, max_length=50)
     raw_text: str | None = Field(default=None, max_length=20000)
+    source_id: str | None = Field(default=None, max_length=100)
+    synthetic: bool = False
 
 
 class JobSetCreate(BaseModel):
@@ -129,6 +149,8 @@ class DiagnosticReport(BaseModel):
     optional_improve: list[str] = Field(default_factory=list)
     ats_keywords: list[str] = Field(default_factory=list)
     checklist: list[str] = Field(default_factory=list)
+    notice: str | None = None
+    engine: Literal["rules", "model"] = "rules"
 
 
 class InterviewCreateRequest(BaseModel):
@@ -157,6 +179,8 @@ class InterviewSessionResponse(BaseModel):
     turns: list[InterviewTurn] = Field(default_factory=list)
     overall_score: float | None = Field(default=None, ge=0, le=5)
     summary: list[str] = Field(default_factory=list)
+    notice: str | None = None
+    engine: Literal["rules", "model"] = "rules"
 
 
 class ModelPingResponse(BaseModel):

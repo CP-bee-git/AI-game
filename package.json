@@ -1,0 +1,13 @@
+{
+  "name": "careerpilot-b2",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
+  "scripts": {
+    "setup": "./start.sh --setup-only",
+    "start": "./start.sh",
+    "public": "./start.sh --public",
+    "stop": "python3 scripts/manage.py stop",
+    "check": "make check",
+    "test": "make smoke && make e2e"
+  }
+}

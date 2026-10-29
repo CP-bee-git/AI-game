@@ -1,0 +1,51 @@
+{
+  "dataset_id":"china-campus-demo-v1",
+  "notice":"中国内地校园求职功能示例。简历、公司、项目、结果数字和10条JD均为合成数据；职业能力类别参考教育部2025年专业教学标准，经自主编写，不代表真实招聘公告或官方推荐。预置画像用于测试，不是模型抽取结果；匹配、诊断、面试使用基础规则。",
+  "sources":[
+    {"id":"moe-510205","title":"教育部：大数据技术专业教学标准（510205）","url":"https://www.moe.gov.cn/s78/A07/zcs_ztzl/2017_zt06/17zt06_bznr/bznr_zyjyzyjxbz/gdzyjy_zk/zk_dzyxxdl/dzxxdl_jsjl/202502/P020250207532993683513.pdf","accessed_on":"2026-10-27"},
+    {"id":"moe-510203","title":"教育部：软件技术专业教学标准（510203）","url":"https://www.moe.gov.cn/s78/A07/zcs_ztzl/2017_zt06/17zt06_bznr/bznr_zyjyzyjxbz/gdzyjy_zk/zk_dzyxxdl/dzxxdl_jsjl/202502/P020250207533323690137.pdf","accessed_on":"2026-10-27"},
+    {"id":"moe-510209","title":"教育部：人工智能技术应用专业教学标准（510209）","url":"https://www.moe.gov.cn/s78/A07/zcs_ztzl/2017_zt06/17zt06_bznr/bznr_zyjyzyjxbz/gdzyjy_zk/zk_dzyxxdl/dzxxdl_jsjl/202502/P020250207532415004946.pdf","accessed_on":"2026-10-27"}
+  ],
+  "candidate_name":"演示候选人 CAND-001（完全虚构）",
+  "resume_paragraphs":[
+    "演示候选人 CAND-001｜合成简历",
+    "声明：姓名、学校、雇主、项目和全部结果数字均为虚构，仅供CareerPilot功能演示。未提供真实电话、邮箱、地址或证件号码。",
+    "求职意向：数据分析助理、数据开发助理；意向城市：上海、杭州、南京；面向2027届校园招聘，时间与岗位均为自拟。",
+    "教育经历：示例信息学院（虚构）｜数据科学与大数据技术｜本科｜2023.09—2027.06（预计）。课程：数据库原理、统计学、Python程序设计、数据可视化。",
+    "技能：Python、SQL、Excel、Pandas、MySQL、Git、数据清洗、数据可视化。能使用Python/Pandas处理缺失值和重复记录，使用SQL完成关联查询和聚合分析，使用Excel制作汇总报表。",
+    "项目一：校园图书借阅分析（虚构，2026.03—2026.06）。担任数据处理与分析负责人，使用Python、Pandas、SQL和MySQL处理合成借阅记录10万条，定义重复记录口径，剔除模拟重复记录1200条；制作8张数据可视化图表。所有数量均为合成演示值。",
+    "项目二：模拟零售销售看板（虚构，2026.07—2026.08）。使用Excel、SQL和数据可视化方法制作销售看板，统一5个指标口径，用Git记录版本；报表制作耗时在模拟任务中从2小时降至40分钟。所有结果均为合成演示值。",
+    "实践经历：示例数研实验室（虚构）｜学生项目助理｜2026.07—2026.08。负责整理合成CSV、编写数据清洗说明和维护Git仓库，无全职工作经历。",
+    "学习计划：尚未掌握Spark、Hadoop、Power BI、PyTorch和Java，不将其计入已掌握技能。希望先补充数据仓库和可视化工具实践。"
+  ],
+  "profile":{
+    "status":"awaiting_confirmation",
+    "education":[{"school":"示例信息学院（虚构）","degree":"本科","major":"数据科学与大数据技术","graduation_year":2027,"in_progress":true,"evidence":{"block_id":"paragraph_4","quote":"本科｜2023.09—2027.06（预计）"}}],
+    "skills":[
+      {"name":"Python","normalized_name":"Python","evidence":{"block_id":"paragraph_5","quote":"技能：Python、SQL、Excel、Pandas、MySQL、Git、数据清洗、数据可视化。"}},
+      {"name":"SQL","normalized_name":"SQL","evidence":{"block_id":"paragraph_5","quote":"使用SQL完成关联查询和聚合分析"}},
+      {"name":"Excel","normalized_name":"Excel","evidence":{"block_id":"paragraph_5","quote":"使用Excel制作汇总报表"}},
+      {"name":"Pandas","normalized_name":"Pandas","evidence":{"block_id":"paragraph_5","quote":"使用Python/Pandas处理缺失值和重复记录"}},
+      {"name":"MySQL","normalized_name":"MySQL","evidence":{"block_id":"paragraph_6","quote":"使用Python、Pandas、SQL和MySQL处理合成借阅记录10万条"}},
+      {"name":"Git","normalized_name":"Git","evidence":{"block_id":"paragraph_7","quote":"用Git记录版本"}},
+      {"name":"数据清洗","normalized_name":"数据清洗","evidence":{"block_id":"paragraph_8","quote":"编写数据清洗说明"}},
+      {"name":"数据可视化","normalized_name":"数据可视化","evidence":{"block_id":"paragraph_6","quote":"制作8张数据可视化图表"}}
+    ],
+    "experiences":[{"company":"示例数研实验室（虚构）","role":"学生项目助理","evidence":{"block_id":"paragraph_8","quote":"无全职工作经历"}}],
+    "projects":[{"name":"校园图书借阅分析（虚构）","evidence":{"block_id":"paragraph_6","quote":"处理合成借阅记录10万条"}},{"name":"模拟零售销售看板（虚构）","evidence":{"block_id":"paragraph_7","quote":"报表制作耗时在模拟任务中从2小时降至40分钟"}}],
+    "preferences":{"cities":["上海","杭州","南京"]},
+    "warnings":["预置合成画像，不是模型抽取结果；请确认后匹配。","本科为在读且预计2027年毕业，规则只对比学历层级，不核验毕业资格、全职年限或录用条件。"]
+  },
+  "jobs":[
+    {"title":"数据分析助理（演示）","company":"虚构示例·沪上数据工坊","location":"上海","education_required":"本科","experience_required":"应届生","required_skills":["Python","SQL","数据清洗","数据可视化"],"preferred_skills":["Excel","Pandas"],"responsibilities":["清洗合成业务数据并核对统计口径","制作指标图表与分析简报"],"source_id":"moe-510205","synthetic":true},
+    {"title":"数据库开发助理（演示）","company":"虚构示例·杭城软件实验室","location":"杭州","education_required":"本科","experience_required":"应届生","required_skills":["SQL","MySQL","Git"],"preferred_skills":["Python","数据库优化"],"responsibilities":["维护数据库查询与数据字典","在测试环境验证查询正确性"],"source_id":"moe-510203","synthetic":true},
+    {"title":"BI报表助理（演示）","company":"虚构示例·金陵数智","location":"南京","education_required":"本科","experience_required":"应届生","required_skills":["SQL","Excel","数据可视化","Power BI"],"preferred_skills":["Python"],"responsibilities":["对齐报表指标定义","搭建业务看板并说明数据限制"],"source_id":"moe-510205","synthetic":true},
+    {"title":"数据质量助理（演示）","company":"虚构示例·沪上质量工作室","location":"上海","education_required":"本科","experience_required":"应届生","required_skills":["Python","SQL","数据清洗","数据质量规则"],"preferred_skills":["Git"],"responsibilities":["定义缺失值和重复记录检查项","记录异常样本和数据修复依据"],"source_id":"moe-510205","synthetic":true},
+    {"title":"Python测试开发助理（演示）","company":"虚构示例·杭城测试工坊","location":"杭州","education_required":"本科","experience_required":"应届生","required_skills":["Python","SQL","Git","自动化测试"],"preferred_skills":["接口测试"],"responsibilities":["设计测试数据和异常分支用例","记录缺陷复现步骤"],"source_id":"moe-510203","synthetic":true},
+    {"title":"大数据开发助理（演示）","company":"虚构示例·金陵数据平台","location":"南京","education_required":"本科","experience_required":"应届生","required_skills":["Python","SQL","Spark","Hadoop"],"preferred_skills":["Git"],"responsibilities":["编写批量数据处理任务","验证分布式作业输出"],"source_id":"moe-510205","synthetic":true},
+    {"title":"Java后端开发助理（演示）","company":"虚构示例·沪上应用研发","location":"上海","education_required":"本科","experience_required":"应届生","required_skills":["Java","Spring Boot","SQL","Git"],"preferred_skills":["MySQL"],"responsibilities":["实现业务接口和数据库访问","补充接口错误处理与测试"],"source_id":"moe-510203","synthetic":true},
+    {"title":"机器学习研发实习生（演示）","company":"虚构示例·杭城算法研究室","location":"杭州","education_required":"硕士","experience_required":"在校实习","required_skills":["Python","PyTorch","机器学习"],"preferred_skills":["SQL"],"responsibilities":["训练基线模型并记录评估口径","检查数据划分和实验复现"],"source_id":"moe-510209","synthetic":true},
+    {"title":"数据分析实习生（演示）","company":"虚构示例·京城分析工作室","location":"北京","education_required":"本科","experience_required":"在校实习","required_skills":["Python","SQL","Excel"],"preferred_skills":["Pandas"],"responsibilities":["整理测试业务数据并制作分析报告"],"source_id":"moe-510205","synthetic":true},
+    {"title":"人工智能应用助理（演示）","company":"虚构示例·鹏城智能实验室","location":"深圳","education_required":"本科","experience_required":"应届生","required_skills":["Python","模型部署","机器学习","接口开发"],"preferred_skills":["Git"],"responsibilities":["验证模型推理接口","记录应用测试结果和运行限制"],"source_id":"moe-510209","synthetic":true}
+  ]
+}

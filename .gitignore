@@ -1,14 +1,15 @@
 .env
-
 .env.*
 !.env.example
 .venv/
+.runtime/
+.private/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-backend/storage/
+backend/**/storage/
 backend/.local/
 backend/*.egg-info/
 node_modules/
@@ -16,4 +17,8 @@ frontend/.next/
 frontend/out/
 *.tsbuildinfo
 *.log
-
+frontend/test-results/
+frontend/playwright-report/
+/frontend/AGENTS.md
+*.docx
+*.xlsx

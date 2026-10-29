@@ -11,5 +11,9 @@ class LocalStorage:
         safe_name = Path(filename).name
         destination = self.root / f"{object_id}_{safe_name}"
         destination.write_bytes(content)
+        destination.chmod(0o600)
         return destination
+
+    def delete(self, path: Path) -> None:
+        path.unlink(missing_ok=True)
 
