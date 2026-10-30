@@ -2,7 +2,7 @@
 
 技术栈：Next.js 16 / React 19、FastAPI / Python 3.12+、SQLite；Node.js 24、pnpm 11。单实例、单 API 进程。
 
-页面样式集中在 `frontend/app/globals.css`：暖白 `#FFFDF8`、正文 `#292D28`、交互色 `#355E50`。标题使用 Noto Serif / 宋体类系统字体，正文使用苹方、微软雅黑或 Noto Sans，不加载外部字体。文案直接说明操作和结果，来源、评分口径等长说明默认收起。
+页面样式集中在 `frontend/app/globals.css`：纯白 `#FFFFFF`、正文 `#242A3D`、主按钮蓝紫 `#5C63B7`、星图紫 `#7168B1`、浅底 `#F9FAFD`。强调色用于按钮、选中状态与图表，不铺大面积渐变。标题和正文统一使用系统无衬线字体（苹方、微软雅黑或 Noto Sans），不加载外部字体。文案直接说明操作和结果，来源、评分口径等长说明默认收起。
 
 ## 启动与发布
 

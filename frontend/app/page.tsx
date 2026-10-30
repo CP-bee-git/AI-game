@@ -491,7 +491,6 @@ export default function Home() {
       <a className="skip-link" href="#workspace">跳到求职工作台</a>
       <header className="topbar">
         <a className="brand" href="/" aria-label="CareerPilot 首页">
-          <span className="brand-mark" aria-hidden="true">职</span>
           <span>就业罗盘<small>CareerPilot</small></span>
         </a>
         <nav className="topnav" aria-label="主导航"><a href="#workspace">简历</a><a href={profile?.status === "confirmed" ? "#analysis" : "#workspace"}>职业参考</a><a href="#cloud-config" onClick={() => { const panel = document.getElementById("cloud-config"); if (panel instanceof HTMLDetailsElement) panel.open = true; }}>连接设置</a></nav>
