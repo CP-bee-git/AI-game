@@ -16,6 +16,7 @@ import pymupdf
 
 from app import main
 from app.config import Settings
+from app.schemas import ModelConfigureRequest
 from app.services.llm import CloudModelError, QwenCloudProvider
 from app.services.session import _attempts, _sessions
 from app.services.state import SQLiteMap
@@ -31,9 +32,19 @@ def make_docx() -> bytes:
 
 
 def check_cloud_errors() -> None:
+    for value in ("sk-ws-unit-test.payload.signature", "  sk-ws-unit.test.signature  ", "sk-test.payload~opaque+/=="):
+        parsed = ModelConfigureRequest(api_key=value)
+        assert parsed.api_key.get_secret_value() == value.strip()
+    for value in ("sk-invalid key", "sk-header\r\ninjection", "sk-非ASCII-key"):
+        try:
+            ModelConfigureRequest(api_key=value)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Unsafe API key characters must remain rejected")
     cases = [
         (401, "invalid_api_key", "wrong credential", 401, "cloud_authentication"),
-        (400, "Arrearage", "account not in good standing", 402, "cloud_quota"),
+        (400, "Arrearage", "account not in good standing", 402, "cloud_billing"),
         (403, "AllocationQuota.FreeTierOnly", "quota consumed", 402, "cloud_quota"),
         (403, "access_denied", "API-Key restrictions", 403, "cloud_permission"),
         (404, "model_not_found", "missing model", 404, "cloud_model_unavailable"),
@@ -85,11 +96,23 @@ def check_cloud_errors() -> None:
             with patch("app.services.llm.AsyncOpenAI", side_effect=AssertionError("Incompatible key must not be sent")), TestClient(main.app) as browser:
                 response = browser.post("/api/v1/model/configure", json={"api_key": key})
                 assert response.status_code == 422 and response.json()["error_code"] == "cloud_key_type" and key not in response.text
+        def workspace_cloud(request: httpx.Request) -> httpx.Response:
+            assert request.headers['authorization'] == 'Bearer sk-ws-unit-test.payload.signature'
+            return httpx.Response(200, json={"id": "workspace-probe", "object": "chat.completion", "created": 0, "model": "qwen-plus", "choices": [{"index": 0, "message": {"role": "assistant", "content": '{"ok":true}'}, "finish_reason": "stop"}]})
+
+        def workspace_client(**kwargs):
+            return AsyncOpenAI(**kwargs, http_client=httpx.AsyncClient(transport=httpx.MockTransport(workspace_cloud)))
+
+        _attempts.clear()
+        with patch('app.services.llm.AsyncOpenAI', workspace_client), TestClient(main.app) as browser:
+            accepted = browser.post('/api/v1/model/configure', json={'api_key': 'sk-ws-unit-test.payload.signature'})
+            assert accepted.status_code == 200 and accepted.json()['chat_configured'], accepted.text
+            assert 'sk-ws-unit-test' not in accepted.text
     finally:
         main.settings.qwen_api_key = previous_key
         _attempts.clear()
         _sessions.clear()
-    print(f"Cloud request contract + safe error classification: PASS ({len(cases) + 2} simulated cases)")
+    print(f"Cloud request contract + safe error classification: PASS ({len(cases) + 2} error cases + dotted workspace-key regression)")
 
 
 def real_ping() -> None:

@@ -38,7 +38,9 @@ def cloud_error(exc: APIError) -> CloudModelError:
         # Inspect upstream identifiers only; its text may contain a submitted secret.
         code = str(error.get("code") or error.get("type") or "").lower()
         message = str(error.get("message", "")).lower()
-        if any(item in code for item in ("arrearage", "insufficient_quota", "insufficientquota", "allocationquota", "freetieronly", "quotaexhausted")) or "free tier" in message:
+        if "arrearage" in code:
+            return CloudModelError(402, "cloud_billing", "阿里云返回 Arrearage：账户欠费、余额不足或计费状态受限。请登录阿里云控制台的「费用与成本」检查账户与账单，处理后等待几分钟，再点击验证连接。")
+        if any(item in code for item in ("insufficient_quota", "insufficientquota", "allocationquota", "freetieronly", "quotaexhausted")) or "free tier" in message:
             return CloudModelError(402, "cloud_quota", "百炼账户欠费、可用额度已耗尽或仅免费额度模式已用完。请在百炼控制台检查费用和模型额度后重试。")
         if exc.status_code == 401 or code in {"invalidapikey", "invalid_api_key"}:
             return CloudModelError(401, "cloud_authentication", "API Key 鉴权失败。请复制百炼通用 API Key，并选择创建该 Key 的地域（中国内地 / 新加坡）；两地 Key 不能混用。")

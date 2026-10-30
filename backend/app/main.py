@@ -87,7 +87,16 @@ def require_qwen_chat() -> None:
 async def safe_validation_error(request: Request, exc: RequestValidationError):
     if request.url.path == f"{settings.api_prefix}/model/configure":
         # Never include request inputs: validation errors may contain a submitted secret.
-        return JSONResponse(status_code=422, content={"detail": "配置格式无效，请检查 API Key、地域及 qwen 模型名；不接受自定义 API 地址"})
+        fields = {error['loc'][-1] for error in exc.errors() if error.get('loc')}
+        if 'api_key' in fields:
+            detail = "API Key 格式无效：请复制完整密钥，去除内部空格和换行；支持新版工作空间 Key。"
+        elif 'region' in fields:
+            detail = "服务区域无效：请选择中国内地或新加坡，并与创建 Key 的地域一致。"
+        elif 'model' in fields:
+            detail = "模型名称无效：请填写 qwen 开头的模型名称，例如 qwen-plus。"
+        else:
+            detail = "配置格式无效：仅接受 API Key、地域和模型名，请勿添加自定义 API 地址。"
+        return JSONResponse(status_code=422, content={"detail": detail, "error_code": "invalid_configuration"})
     return JSONResponse(status_code=422, content={"detail": [{"loc": error["loc"], "msg": error["msg"], "type": error["type"]} for error in exc.errors()]})
 
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from typing import Literal
 from uuid import UUID
 
@@ -33,7 +34,9 @@ class ModelConfigureRequest(BaseModel):
     def validate_api_key(cls, value):
         if isinstance(value, str):
             value = value.strip()
-            if not value.isascii() or not all(char.isalnum() or char in "-_" for char in value):
+            # API keys are opaque Bearer credentials. New workspace keys contain
+            # periods; RFC 6750 also permits ~, +, / and trailing padding.
+            if not re.fullmatch(r"[A-Za-z0-9._~+/-]+=*", value):
                 raise ValueError("API key 格式无效")
         return value
 
