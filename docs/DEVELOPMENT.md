@@ -52,6 +52,6 @@ make e2e                    # 浏览器完整流程
 
 云错误返回 `{detail,error_code}`：401 鉴权/地域、402 账单/额度、403 权限、404 模型、422 Key 类型/参数、429 限流、503 网络/云服务、504 超时。`cloud_billing` / `Arrearage` 表示阿里云账户计费状态异常，需在「费用与成本」处理；不会通过重试或更改 Key 格式自动解除。配置失败保留旧 Key。日志在 `.runtime/logs/`，只按错误类别记录，不回显上游含密钥的正文。
 
-职业库快照和来源在 `backend/app/data/occupations.json`；中文名及关键词映射由项目维护，职业代码和原文保留。匹配为资料规则覆盖，非实时招聘、非中国职业资格认定；星级为证据完整度，不是能力测评。更新快照时必须保留来源、版本和许可，并运行职业库检查。
+职业库在 `backend/app/data/occupations.json`：55 个中国职业名称、代码与官方分类事实，经技能人才评价工作网逐条核对；场景说明、常见岗位称呼和关键词由项目独立编写。关键词等权，匹配仅说明技能对应，非官方能力评分、资格认定或实时招聘。更新时核对来源与记录哈希，再运行 `check_careers.py`；可用 `--verify-source` 向官方网页端点逐条复核（仅维护使用，端点不保证稳定），或 `--source-dir` 检查已下载的事实记录。不要给官方数据标注不存在的开放许可；详见 `docs/CHINA_CAREER_SOURCES.md`。
 
 报告模板在 `backend/app/services/exporter.py`，HTML 自包含、带星图，浏览器可打印为 PDF。上传与结果保存在 `backend/storage/`；`.env`、`.runtime`、`.private` 均禁止提交。当前尚无自动删除/保留期管理。

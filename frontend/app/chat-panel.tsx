@@ -62,7 +62,7 @@ export default function ChatPanel({ apiBase, connected, ready, onConnect }: {
       </div>}
       <form onSubmit={send}>
         <label className="field-label" htmlFor="chat-message">想聊什么</label>
-        <textarea className="job-input chat-input" id="chat-message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="例如：没有实习经历，面试时该怎么介绍自己？" maxLength={4000} rows={3} disabled={sending} aria-describedby="chat-privacy" required />
+        <textarea className="job-input chat-input" id="chat-message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="例如：没有实习经历，面试时该怎么介绍自己？" maxLength={4000} rows={3} disabled={!ready || sending} aria-describedby="chat-privacy" required />
         <p className="chat-privacy" id="chat-privacy">发送的内容会交给阿里云处理；对话仅保留在本页，刷新或清空后移除。请避免填写电话、证件号等信息。<a href="/privacy">聊天数据说明</a></p>
         <div className="chat-actions"><button className="primary-button compact" type="submit" disabled={!ready || !connected || sending || !draft.trim()}>{sending ? "正在回复…" : "发送"}<ArrowRight size={15} /></button>{messages.length > 0 && <button className="secondary-button compact" type="button" disabled={sending} onClick={() => { setMessages([]); setDraft(""); setError(""); }}>清空对话</button>}{sending && <span className="chat-pending" role="status">千问正在回复，请稍候。</span>}</div>
       </form>

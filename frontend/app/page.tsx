@@ -41,7 +41,7 @@ type ProfileAnalysis = {
     catalog: { id: string; name: string; version: string; source_url: string; license: string; accessed_on: string; notice: string; attribution?: string; scoring_method?: string };
     total: number;
     results: Array<{
-      code: string; title: string; original_title: string; description: string; source_url: string;
+      code: string; title: string; category: string; typical_jobs: string[]; description: string; source_url: string; source_title: string; official_classification: string[];
       score: number; stars: number; matched_skills: string[]; skill_gaps: string[]; reason: string;
     }>;
   };
@@ -604,13 +604,13 @@ export default function Home() {
             {upload && <div className="action-row"><button className="secondary-button compact" disabled={exporting} type="button" onClick={() => exportReport("profile", upload.resume_id, "html")}><Download size={15} />下载简历分析报告</button><button className="secondary-button compact" disabled={exporting} type="button" onClick={() => exportReport("profile", upload.resume_id, "json")}>导出分析数据 JSON</button></div>}
           </div>
           <div className="career-section">
-            <div className="analysis-heading"><div><h3>10 个职业参考</h3><p>按你填写的技能排序，可逐项查看对应依据。</p></div><span className="stage-tag">{analysis.careers.results.length} 个方向</span></div>
+            <div className="analysis-heading"><div><h3>10 个职业参考</h3><p>采用中国职业分类，按你填写的技能排序，可逐项查看对应依据。</p></div><span className="stage-tag">{analysis.careers.results.length} 个方向</span></div>
             <div className="career-list">{analysis.careers.results.map((career, index) => <article className="career-row" key={career.code}>
               <span className="career-rank">{String(index + 1).padStart(2, "0")}</span>
-              <div className="career-content"><div className="career-title"><h4>{career.title}</h4><span>{career.original_title} · {career.code}</span></div><p className="career-reason">{career.reason}</p><div className="career-skills"><p><b>对应技能</b>{career.matched_skills.join("、") || "目前没有对应技能"}</p><p><b>尚未写明</b>{career.skill_gaps.join("、") || "条目所列技能均有对应"}</p></div><details className="career-source"><summary>职业说明与原始资料</summary><p lang="en">{career.description}</p><a href={career.source_url} target="_blank" rel="noreferrer">查看原始条目 ↗</a></details></div>
+              <div className="career-content"><div className="career-title"><h4>{career.title}</h4><span>{career.category} · 职业代码 {career.code}</span><span>常见岗位称呼：{career.typical_jobs.join("、")}</span></div><p className="career-reason">{career.reason}</p><div className="career-skills"><p><b>对应技能</b>{career.matched_skills.join("、") || "目前没有对应技能"}</p><p><b>可补充核对</b>{career.skill_gaps.join("、") || "本项目所列关键词均有对应"}</p></div><details className="career-source"><summary>职业说明与原始资料</summary><p>{career.description}</p><p>官方分类：{career.official_classification.join(" / ")}</p><p>场景说明、岗位称呼与技能关键词由本项目整理；不作为官方任职条件。</p><a href={career.source_url} target="_blank" rel="noreferrer">{career.source_title} · 查看名称与代码 ↗</a></details></div>
               <div className="career-fit"><strong>{Math.round(career.score)}<small>/ 100</small></strong><StarRating score={career.stars} label={`${career.title}匹配证据`} /><span>技能对应分</span></div>
             </article>)}</div>
-            <div className="catalog-note"><strong>{analysis.careers.catalog.name} · {analysis.careers.catalog.version}</strong><p>职业分类条目，供了解工作方向。这里不提供实时招聘信息。</p><p>共 {analysis.careers.total} 个条目 · {analysis.careers.catalog.license} · 获取日期 {analysis.careers.catalog.accessed_on}</p><a href={analysis.careers.catalog.source_url} target="_blank" rel="noreferrer">职业库来源 ↗</a><details><summary>评分口径、来源与许可</summary><p>{analysis.careers.catalog.notice}</p><p>{analysis.careers.catalog.scoring_method}</p><p lang="en">{analysis.careers.catalog.attribution}</p></details></div>
+            <div className="catalog-note"><strong>{analysis.careers.catalog.name} · {analysis.careers.catalog.version}</strong><p>参照中国职业分类整理，供了解国内工作方向。这里不提供实时招聘信息。</p><p>共 {analysis.careers.total} 个精选条目 · 核对日期 {analysis.careers.catalog.accessed_on}</p><a href={analysis.careers.catalog.source_url} target="_blank" rel="noreferrer">职业库来源 ↗</a><details><summary>评分口径、来源与使用说明</summary><p>{analysis.careers.catalog.notice}</p><p>{analysis.careers.catalog.scoring_method}</p><p>{analysis.careers.catalog.license}</p><p>{analysis.careers.catalog.attribution}</p></details></div>
           </div>
         </>}
       </section>}

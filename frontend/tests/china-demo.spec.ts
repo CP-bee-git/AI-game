@@ -10,10 +10,13 @@ test("Chinese synthetic demo completes profile stars, ten real careers, matching
   await expect(page.locator(".career-row")).toHaveCount(10);
   await expect(page.locator(".dimension").first()).toBeVisible();
   await expect(page.locator(".dimension").first().getByRole("img")).toHaveAttribute("aria-label", /5 星/);
-  await expect(page.locator(".catalog-note")).toContainText("O*NET");
+  await expect(page.locator(".catalog-note")).toContainText("中国职业分类");
   await expect(page.locator(".career-row").first()).not.toContainText("（演示）");
+  await expect(page.locator(".career-row").first()).toContainText("大数据工程技术人员");
+  await expect(page.locator(".career-row").first()).toContainText("2-02-38-03");
+  await expect(page.locator(".career-row").first()).toContainText("常见岗位称呼");
   await page.locator(".career-source").first().locator("summary").click();
-  await expect(page.locator(".career-source").first().getByRole("link")).toHaveAttribute("href", /https:\/\/www\.onetonline\.org\/link\/summary\//);
+  await expect(page.locator(".career-source").first().getByRole("link")).toHaveAttribute("href", /https:\/\/www\.osta\.org\.cn\/api\/client\/career\/detail\?careerCode=/);
   const profileDownloadEvent = page.waitForEvent("download");
   await page.getByRole("button", { name: "下载简历分析报告" }).click();
   const profileDownload = await profileDownloadEvent;
@@ -21,7 +24,9 @@ test("Chinese synthetic demo completes profile stars, ten real careers, matching
   const profilePath = await profileDownload.path();
   expect(profilePath).not.toBeNull();
   const profileHtml = await readFile(profilePath!, "utf8");
-  expect(profileHtml).toContain("onetonline.org");
+  expect(profileHtml).toContain("www.osta.org.cn");
+  expect(profileHtml).toContain("常见岗位称呼");
+  expect(profileHtml).not.toContain("O*NET");
   await page.getByRole("button", { name: "开始匹配" }).click();
   await expect(page.locator(".match-row")).toHaveCount(10);
   await expect(page.locator(".match-row").first()).toContainText("数据分析助理");

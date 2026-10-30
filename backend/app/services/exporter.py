@@ -89,13 +89,13 @@ def _careers(data: Mapping) -> str:
         matched = item.get('matched_skills') or []
         gaps = item.get('skill_gaps') or []
         source_url = str(item.get('source_url', ''))
-        source = f'<a href="{_escape(source_url)}" target="_blank" rel="noreferrer">职业来源 ↗</a>' if source_url.startswith('https://') else ''
-        rows.append(f'''<article class="career-card"><div class="career-heading"><span class="rank">{index:02d}</span><div><h3>{_escape(item.get('title'))}</h3><p class="career-original">{_escape(item.get('original_title'))} · {_escape(item.get('code'))}</p></div><div class="career-score">{_escape(item.get('score', 0))}<small>匹配分 / 100</small></div></div><details class="career-definition"><summary>职业定义原文</summary><p lang="en">{_escape(item.get('description'))}</p></details><p class="career-reason">{_escape(item.get('reason'))}</p><div class="career-evidence"><p><b>已命中</b> {_escape('、'.join(str(v) for v in matched) or '暂无直接技能证据')}</p><p><b>待核对</b> {_escape('、'.join(str(v) for v in gaps) or '本条目所列技能暂无缺口')}</p></div><div class="career-foot">{_stars(item.get('stars', 0))}<span>{source}</span></div></article>''')
+        source = f'<a href="{_escape(source_url)}" target="_blank" rel="noreferrer">中国职业分类来源 ↗</a>' if source_url.startswith('https://') else ''
+        rows.append(f'''<article class="career-card"><div class="career-heading"><span class="rank">{index:02d}</span><div><h3>{_escape(item.get('title'))}</h3><p class="career-original">{_escape(item.get('category'))} · 职业代码 {_escape(item.get('code'))}</p></div><div class="career-score">{_escape(item.get('score', 0))}<small>匹配分 / 100</small></div></div><details class="career-definition"><summary>工作方向说明（项目整理）</summary><p>{_escape(item.get('description'))}</p></details><p class="career-original">常见岗位称呼：{_escape('、'.join(item.get('typical_jobs') or []))}</p><p class="career-reason">{_escape(item.get('reason'))}</p><div class="career-evidence"><p><b>已命中</b> {_escape('、'.join(str(v) for v in matched) or '暂无直接技能证据')}</p><p><b>待核对</b> {_escape('、'.join(str(v) for v in gaps) or '本条目所列技能暂无缺口')}</p></div><div class="career-foot">{_stars(item.get('stars', 0))}<span>{source}</span></div></article>''')
     attribution = f'{catalog.get("name", "职业库")} · {catalog.get("version", "")} · {catalog.get("license", "")} · 数据核对 {catalog.get("accessed_on", "")}'
     source_url = str(catalog.get('source_url', ''))
     source = f'<p class="source-url">{_escape(source_url)}</p>' if source_url.startswith('https://') else ''
-    credit = f'<p lang="en">{_escape(catalog.get("attribution", ""))}</p>'
-    return f'<p class="explanation">{_escape(catalog.get("notice", "职业方向匹配，不是实时招聘职位或录用建议。"))}</p><div class="career-list">{"".join(rows)}</div><aside class="source-note"><b>数据来源与许可</b><p>{_escape(attribution)}</p>{source}{credit}<p>{_escape(catalog.get("scoring_method", ""))}</p></aside>'
+    credit = f'<p>{_escape(catalog.get("attribution", ""))}</p>'
+    return f'<p class="explanation">{_escape(catalog.get("notice", "职业方向匹配，不是实时招聘职位或录用建议。"))}</p><div class="career-list">{"".join(rows)}</div><aside class="source-note"><b>数据来源与使用说明</b><p>{_escape(attribution)}</p>{source}{credit}<p>{_escape(catalog.get("scoring_method", ""))}</p></aside>'
 
 
 def _interview(data: Mapping) -> str:

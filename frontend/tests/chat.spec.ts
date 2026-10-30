@@ -21,6 +21,7 @@ test("chat works without a resume, consent checkbox or demo metadata and keeps c
   try {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "直接聊天" })).toBeVisible();
+    await expect(page.getByText("连接已验证", { exact: true })).toBeVisible();
     await expect(page.getByRole("checkbox")).not.toBeChecked();
     await page.getByLabel("想聊什么").fill("我还没有简历，能聊聊职业方向吗？");
     await page.getByRole("button", { name: "发送", exact: true }).click();

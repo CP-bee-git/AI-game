@@ -65,9 +65,11 @@ def check() -> None:
                     content = report.json()['content']
                     assert report.json()['filename'] == f'careerpilot-profile.{fmt}'
                     if fmt == 'html':
-                        assert 'class="radar"' in content and '★' in content and 'CC BY 4.0' in content
-                        assert content.count('class="career-card"') == 10 and 'onetonline.org' in content
-                        assert 'USDOL/ETA' in content and '合成' in content
+                        assert 'class="radar"' in content and '★' in content and '中国职业分类' in content
+                        assert content.count('class="career-card"') == 10 and 'www.osta.org.cn' in content
+                        assert '常见岗位称呼' in content and '合成' in content
+                        assert 'O*NET' not in content and 'CC BY 4.0' not in content
+                        assert '2-02-38-03' in content and '大数据工程技术人员' in content
                     else:
                         assert len(json.loads(content)['careers']['results']) == 10
                     assert stranger.get('/api/v1/exports/' + report.json()['export_id']).status_code == 404
