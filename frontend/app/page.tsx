@@ -487,33 +487,22 @@ export default function Home() {
   const activeStep = interview ? 4 : report ? 3 : profile?.status === "confirmed" ? 2 : upload ? 1 : 0;
 
   return (
-    <main className="shell">
+    <div className="app-layout">
       <a className="skip-link" href="#workspace">跳到求职工作台</a>
-      <header className="topbar">
-        <a className="brand" href="/" aria-label="CareerPilot 首页">
-          <span>就业罗盘<small>CareerPilot</small></span>
-        </a>
-        <nav className="topnav" aria-label="主导航"><a href="#workspace">简历</a><a href={profile?.status === "confirmed" ? "#analysis" : "#workspace"}>职业参考</a><a href="#cloud-config" onClick={() => { const panel = document.getElementById("cloud-config"); if (panel instanceof HTMLDetailsElement) panel.open = true; }}>连接设置</a></nav>
-        <div className="topbar-meta" aria-live="polite">
-          <span className={`status-dot ${apiState}`} />
-          <span>{apiState === "online" ? model?.chat_configured ? "模型已连接" : "模型未连接" : apiState === "offline" ? "网站暂时不可用" : "正在连接"}</span>
-        </div>
-      </header>
+      <aside className="app-rail" aria-label="工作台导航">
+        <a className="brand" href="/" aria-label="CareerPilot 首页"><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 17V6.5A2.5 2.5 0 0 1 8.5 4H18v10.5a2.5 2.5 0 0 1-2.5 2.5H6Z" stroke="currentColor" strokeWidth="1.7"/><path d="M3 8v12h12M10 9h4M10 12h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><span>就业罗盘<small>CareerPilot</small></span></a>
+        <p className="rail-label">操作步骤</p>
+        <nav className="rail-nav" aria-label="求职流程">{steps.map((step,index)=><a className={`rail-link ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} href={index < 2 || profile?.status !== "confirmed" ? "#workspace" : index === 2 ? "#analysis" : "#jobs"} key={step}><span className="rail-link-index">{String(index + 1).padStart(2,"0")}</span><span>{step}</span>{index < activeStep && <Check size={14} className="rail-complete" />}</a>)}</nav>
+        <div className="rail-footer"><button className="rail-settings" type="button" onClick={() => { const panel=document.getElementById("cloud-config");if(panel instanceof HTMLDetailsElement){panel.open=true;panel.scrollIntoView({block:"start"});} }}><LockKeyhole size={15} />模型设置</button><a href="/privacy"><ShieldCheck size={15} />数据与隐私</a><span className="rail-edition">演示版 · 当前浏览器会话</span></div>
+      </aside>
+      <main className="shell">
 
+      <div className="workspace-head"><span>求职工作台 <span className="breadcrumb-separator">/</span> 简历分析</span><div className="topbar-meta" aria-live="polite"><span className={`status-dot ${apiState === "online" ? model?.chat_configured ? "online" : "checking" : apiState}`} /><span>{apiState === "online" ? model?.chat_configured ? "模型已连接" : "模型未连接" : apiState === "offline" ? "网站暂时不可用" : "正在连接"}</span></div></div>
       <section className="workspace-intro" aria-labelledby="workspace-title">
-        <div><p className="page-label">求职资料</p><h1 id="workspace-title">简历与岗位</h1><p>先把经历和技能写清楚，再对照岗位，看看哪些地方需要补充。</p></div>
-        <a className="text-link" href="#demo">先看一份示例 <ArrowRight size={15} /></a>
+        <div className="intro-copy"><p className="page-label">求职工作台</p><h1 id="workspace-title">下一步，从了解自己开始。</h1><p>读懂简历，连接职业方向，准备下一次机会。</p><a className="text-link intro-example-link" href="#demo">先看一份示例 <ArrowRight size={14} /></a></div>
+        <div className="session-progress" aria-label={`当前第 ${activeStep + 1} 步，共 5 步：${steps[activeStep]}`}><span className="session-progress-label">本次进度</span><div className="session-progress-count"><strong>{String(activeStep + 1).padStart(2,"0")}</strong><span>/ 05</span></div><div className="session-progress-bars" aria-hidden="true">{steps.map((step,index)=><span className={index <= activeStep ? "reached" : ""} key={step} />)}</div><span className="session-progress-step">{steps[activeStep]}</span></div>
       </section>
 
-      <nav className="stepper" aria-label="求职流程">
-        {steps.map((step, index) => (
-          <a href={index < 2 || profile?.status !== "confirmed" ? "#workspace" : index === 2 ? "#analysis" : "#jobs"} className={`step ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} key={step}>
-            <span className="step-index">{index < activeStep ? <Check size={14} /> : String(index + 1).padStart(2, "0")}</span>
-            <span>{step}</span>
-
-          </a>
-        ))}
-      </nav>
 
       <details className="cloud-panel" id="cloud-config">
         <summary className="connection-summary"><span className="connection-name"><LockKeyhole size={15} />千问连接设置</span><span className={`connection-badge ${model?.chat_configured ? "connected" : ""}`}>{model?.chat_configured ? "连接已验证" : "等待连接"}</span><span className="connection-summary-note">{model?.chat_configured ? model.model : "使用自己的简历前，请先填入 API Key"}</span><span className="connection-toggle" aria-hidden="true" /></summary>
@@ -531,20 +520,6 @@ export default function Home() {
         </form>
         </div>
       </details>
-
-      <section className="demo-panel" id="demo" aria-label="中国数据演示">
-        <div>
-          <p className="page-label">示例</p>
-          <h2>先用示例看看结果</h2>
-          <p>示例里有一份简历和 10 条岗位，直接载入即可，不需要 API Key。</p>
-          <p className="demo-disclosure">简历、公司和岗位均为虚构；示例画像预先写好，匹配和反馈按规则生成。</p>
-          {demoInfo && <details className="demo-sources"><summary>示例数据从哪里来</summary><p>{demoInfo.notice}</p><div className="source-links">{demoInfo.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.title} ↗</a>)}</div></details>}
-        </div>
-        <div className="demo-actions">
-          <button className="primary-button compact" disabled={apiState !== "online" || loadingDemo || uploading} onClick={loadDemo} type="button">{loadingDemo ? "加载中..." : "载入示例"}<ArrowRight size={16} /></button>
-          <a className="secondary-button compact" href={`${apiBase}/demo/china/resume`} download>下载示例简历</a>
-        </div>
-      </section>
 
       <section className="workspace-grid" id="workspace">
         <div className="upload-section">
@@ -568,9 +543,11 @@ export default function Home() {
           {upload && <div className="notice success" role="status"><CheckCircle2 size={16} /><span><strong>{upload.filename}</strong> 已接收。{upload.task?.message}</span></div>}
           {upload && !profile && <button className="secondary-button" disabled={generatingProfile} onClick={generateProfile} type="button">{generatingProfile ? "正在整理..." : "整理简历信息"}</button>}
           {profile && <div className="profile-preview"><div className="profile-preview-head"><strong>简历信息{profile.status === "confirmed" ? "" : "（待核对）"}</strong><span>{profile.status === "confirmed" ? "已确认" : "请先核对"}</span></div><label className="field-label" htmlFor="skills">技能（可修改，逗号分隔）</label><input className="text-input" id="skills" value={skillText} onChange={(event) => setSkillText(event.target.value)} disabled={profile.status === "confirmed"} /><div className="skill-list">{profile.skills.length ? profile.skills.slice(0, 12).map((skill, index) => <span key={`${skill.name}-${index}`}>{skill.normalized_name ?? skill.name ?? "未命名技能"}</span>) : <small>没有识别到明确技能，可以在上面补充。</small>}</div>{profile.warnings.length > 0 && <p className="profile-warning">{profile.warnings[0]}</p>}{profile.status !== "confirmed" && <button className="secondary-button" disabled={confirmingProfile} onClick={confirmProfile} type="button">{confirmingProfile ? "保存中..." : "确认信息，查看匹配"}<ArrowRight size={15} /></button>}</div>}
+          <div className="workspace-tip"><p>先核对提取的信息，再查看匹配结果。只补充确实做过、能说明的经历。</p></div>
         </div>
 
         <aside className="info-panel">
+          <div className="session-record">
           <div className="panel-title"><ScanSearch size={17} /><span>本次记录</span></div>
           <div className="info-list">
             <div><span>简历信息</span><strong>{profile?.status === "confirmed" ? "已确认" : profile ? "待确认" : upload ? "可生成" : "还没上传"}</strong></div>
@@ -578,10 +555,24 @@ export default function Home() {
             <div><span>目标岗位</span><strong>{jobCount} / 20</strong></div>
             <div><span>面试状态</span><strong>{interview?.status === "completed" ? "已完成" : interview ? "进行中" : "未开始"}</strong></div>
           </div>
+          </div>
+          <section className="demo-panel" id="demo" aria-label="中国数据演示">
+            <div>
+              <p className="page-label">示例</p>
+              <h2>先用示例看看结果</h2>
+              <p>示例里有一份简历和 10 条岗位，直接载入即可，不需要 API Key。</p>
+              <p className="demo-disclosure">简历、公司和岗位均为虚构；示例画像预先写好，匹配和反馈按规则生成。</p>
+              {demoInfo && <details className="demo-sources"><summary>示例数据从哪里来</summary><p>{demoInfo.notice}</p><div className="source-links">{demoInfo.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.title} ↗</a>)}</div></details>}
+            </div>
+            <div className="demo-actions">
+              <button className="primary-button compact" disabled={apiState !== "online" || loadingDemo || uploading} onClick={loadDemo} type="button">{loadingDemo ? "加载中..." : "载入示例"}<ArrowRight size={16} /></button>
+              <a className="secondary-button compact" href={`${apiBase}/demo/china/resume`} download>下载示例简历</a>
+            </div>
+          </section>
+
           <details className="model-card"><summary>模型与计算方式</summary>
             {model ? <div className="model-details"><strong>{model.model}</strong><span>{model.provider}</span><small>文字处理：{model.chat_configured ? "已连接" : "未连接"}</small><small>图片识别：{model.image_ocr}</small><small>岗位分数按技能、学历和城市计算。</small></div> : <p className="muted">正在读取设置</p>}
           </details>
-          <div className="workspace-tip"><p>先核对提取的信息，再查看匹配结果。只补充确实做过、能说明的经历。</p></div>
         </aside>
       </section>
 
@@ -655,7 +646,8 @@ export default function Home() {
       </section>}
 
       <footer><a className="brand footer-brand" href="/"><span>就业罗盘 <small>CareerPilot</small></span></a><span>简历整理、岗位比较与面试练习</span><a href="/privacy">隐私与数据处理说明 <ArrowRight size={13} /></a></footer>
-    </main>
+      </main>
+    </div>
   );
 }
 
