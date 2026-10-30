@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, CheckCircle2, CircleAlert, Download, FileUp, LockKeyhole, ScanSearch, ShieldCheck, Unplug } from "lucide-react";
+import ChatPanel from "./chat-panel";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
@@ -99,6 +100,15 @@ function errorMessage(detail: unknown, fallback: string): string {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) return detail.map((item) => typeof item?.msg === "string" ? item.msg : "输入不符合要求").join("；");
   return fallback;
+}
+
+function openCloudSettings() {
+  const panel = document.getElementById("cloud-config");
+  if (panel instanceof HTMLDetailsElement) {
+    panel.open = true;
+    panel.scrollIntoView({ block: "start" });
+    document.getElementById("api-key")?.focus({ preventScroll: true });
+  }
 }
 
 function StarRating({ score, label }: { score: number; label: string }) {
@@ -492,20 +502,20 @@ export default function Home() {
       <aside className="app-rail" aria-label="工作台导航">
         <a className="brand" href="/" aria-label="CareerPilot 首页"><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 17V6.5A2.5 2.5 0 0 1 8.5 4H18v10.5a2.5 2.5 0 0 1-2.5 2.5H6Z" stroke="currentColor" strokeWidth="1.7"/><path d="M3 8v12h12M10 9h4M10 12h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><span>就业罗盘<small>CareerPilot</small></span></a>
         <p className="rail-label">操作步骤</p>
-        <nav className="rail-nav" aria-label="求职流程">{steps.map((step,index)=><a className={`rail-link ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} href={index < 2 || profile?.status !== "confirmed" ? "#workspace" : index === 2 ? "#analysis" : "#jobs"} key={step}><span className="rail-link-index">{String(index + 1).padStart(2,"0")}</span><span>{step}</span>{index < activeStep && <Check size={14} className="rail-complete" />}</a>)}</nav>
-        <div className="rail-footer"><button className="rail-settings" type="button" onClick={() => { const panel=document.getElementById("cloud-config");if(panel instanceof HTMLDetailsElement){panel.open=true;panel.scrollIntoView({block:"start"});} }}><LockKeyhole size={15} />模型设置</button><a href="/privacy"><ShieldCheck size={15} />数据与隐私</a><span className="rail-edition">演示版 · 当前浏览器会话</span></div>
+        <nav className="rail-nav" aria-label="求职流程">{steps.map((step,index)=><a className={`rail-link ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} href={index === 4 && profile?.status !== "confirmed" ? "#chat" : index < 2 || profile?.status !== "confirmed" ? "#workspace" : index === 2 ? "#analysis" : "#jobs"} key={step}><span className="rail-link-index">{String(index + 1).padStart(2,"0")}</span><span>{step}</span>{index < activeStep && <Check size={14} className="rail-complete" />}</a>)}</nav>
+        <div className="rail-footer"><button className="rail-settings" type="button" onClick={openCloudSettings}><LockKeyhole size={15} />模型设置</button><a href="/privacy"><ShieldCheck size={15} />数据与隐私</a><span className="rail-edition">演示版 · 当前浏览器会话</span></div>
       </aside>
       <main className="shell">
 
       <div className="workspace-head"><span>求职工作台 <span className="breadcrumb-separator">/</span> 简历分析</span><div className="topbar-meta" aria-live="polite"><span className={`status-dot ${apiState === "online" ? model?.chat_configured ? "online" : "checking" : apiState}`} /><span>{apiState === "online" ? model?.chat_configured ? "模型已连接" : "模型未连接" : apiState === "offline" ? "网站暂时不可用" : "正在连接"}</span></div></div>
       <section className="workspace-intro" aria-labelledby="workspace-title">
-        <div className="intro-copy"><p className="page-label">求职工作台</p><h1 id="workspace-title">下一步，从了解自己开始。</h1><p>读懂简历，连接职业方向，准备下一次机会。</p><a className="text-link intro-example-link" href="#demo">先看一份示例 <ArrowRight size={14} /></a></div>
+        <div className="intro-copy"><p className="page-label">求职工作台</p><h1 id="workspace-title">下一步，从了解自己开始。</h1><p>读懂简历，连接职业方向，准备下一次机会。</p><div className="intro-links"><a className="text-link" href="#chat">直接聊天 <ArrowRight size={14} /></a><a className="text-link" href="#demo">先看一份示例 <ArrowRight size={14} /></a></div></div>
         <div className="session-progress" aria-label={`当前第 ${activeStep + 1} 步，共 5 步：${steps[activeStep]}`}><span className="session-progress-label">本次进度</span><div className="session-progress-count"><strong>{String(activeStep + 1).padStart(2,"0")}</strong><span>/ 05</span></div><div className="session-progress-bars" aria-hidden="true">{steps.map((step,index)=><span className={index <= activeStep ? "reached" : ""} key={step} />)}</div><span className="session-progress-step">{steps[activeStep]}</span></div>
       </section>
 
 
       <details className="cloud-panel" id="cloud-config">
-        <summary className="connection-summary"><span className="connection-name"><LockKeyhole size={15} />千问连接设置</span><span className={`connection-badge ${model?.chat_configured ? "connected" : ""}`}>{model?.chat_configured ? "连接已验证" : "等待连接"}</span><span className="connection-summary-note">{model?.chat_configured ? model.model : "使用自己的简历前，请先填入 API Key"}</span><span className="connection-toggle" aria-hidden="true" /></summary>
+        <summary className="connection-summary"><span className="connection-name"><LockKeyhole size={15} />千问连接设置</span><span className={`connection-badge ${model?.chat_configured ? "connected" : ""}`}>{model?.chat_configured ? "连接已验证" : "等待连接"}</span><span className="connection-summary-note">{model?.chat_configured ? model.model : "聊天或分析简历前，请先填入 API Key"}</span><span className="connection-toggle" aria-hidden="true" /></summary>
         <div className="connection-body">
           <div className="cloud-intro"><h2 id="cloud-title">连接千问</h2><p>选择密钥所属的区域，填好后点验证。没有密钥，也可以先看下面的示例。</p><p className="connection-note">服务重启或会话到期后，需要重新连接。</p></div>
         <form className="cloud-form" onSubmit={configureModel} autoComplete="off">
@@ -520,6 +530,8 @@ export default function Home() {
         </form>
         </div>
       </details>
+
+      <ChatPanel apiBase={apiBase} connected={Boolean(model?.chat_configured)} ready={model !== null} onConnect={openCloudSettings} />
 
       <section className="workspace-grid" id="workspace">
         <div className="upload-section">

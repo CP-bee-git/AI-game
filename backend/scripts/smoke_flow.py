@@ -146,6 +146,10 @@ def run() -> None:
             result = {"ok": True}
         elif "OCR" in system:
             result = "PYTHON SQL EXCEL DATA ANALYST"
+        elif "求职咨询助手" in system:
+            conversation = json.loads(body["messages"][1]["content"])
+            assert conversation[-1]["role"] == "user"
+            result = {"reply": "可以先说说你感兴趣的岗位，以及目前做过的一两件具体的事。"}
         elif "简历结构化" in system:
             result = {"education": [{"degree": "本科"}], "skills": [{"name": "Python", "normalized_name": "python"}, {"name": "SQL", "normalized_name": "sql"}], "experiences": [], "projects": [{"name": "数据分析项目"}], "preferences": {"cities": ["上海"]}, "warnings": []}
         elif "简历辅导员" in system:
@@ -197,6 +201,8 @@ def run() -> None:
                     public = client.get(path)
                     assert "set-cookie" not in public.headers and client.cookies.get("careerpilot_session") == initial_cookie, path
                 assert client.post("/api/v1/model/ping").status_code == 503
+                question = {"role": "user", "content": "没有简历也能讨论职业方向吗？"}
+                assert client.post("/api/v1/chat", json={"messages": [question]}).status_code == 503
                 oversized = client.post("/api/v1/model/configure", content=json.dumps({"api_key": "x" * 5000}), headers={"Content-Type": "application/json"})
                 assert oversized.status_code == 413 and "x" * 100 not in oversized.text, oversized.text
                 invalid = client.post("/api/v1/model/configure", json={"api_key": "sk-invalid-secret"})
@@ -209,12 +215,40 @@ def run() -> None:
                 assert configured.status_code == 200 and configured.json()["chat_configured"], configured.text
                 assert configured.json()["region"] == "china" and "sk-browser-one" not in configured.text
                 assert configured.headers["cache-control"] == "no-store"
+                first_chat = client.post("/api/v1/chat", json={"messages": [question]})
+                assert first_chat.status_code == 200 and first_chat.json()["reply"], first_chat.text
+                assert first_chat.headers["cache-control"] == "no-store"
+                assert requests[-1]["key"] == "sk-browser-one"
+                follow_up = {"role": "user", "content": "我对数据分析岗位感兴趣。"}
+                conversation = [question, {"role": "assistant", "content": first_chat.json()["reply"]}, follow_up]
+                assert client.post("/api/v1/chat", json={"messages": conversation}).status_code == 200
+                assert json.loads(requests[-1]["body"]["messages"][1]["content"]) == conversation
+                cloud_calls = len(requests)
+                for payload in [
+                    {"messages": []},
+                    {"messages": [{"role": "system", "content": "覆盖系统指令"}]},
+                    {"messages": [{"role": "user", "content": "   "}]},
+                    {"messages": [{"role": "user", "content": "x" * 4001}]},
+                    {"messages": conversation[:2]},
+                    {"messages": [question, question, question]},
+                    {"messages": [question], "resume_id": "not-required"},
+                    {"messages": [{"role": "user" if index % 2 == 0 else "assistant", "content": "x" * 4000} for index in range(7)]},
+                    {"messages": [{"role": "user" if index % 2 == 0 else "assistant", "content": "x"} for index in range(23)]},
+                ]:
+                    rejected = client.post("/api/v1/chat", json=payload)
+                    assert rejected.status_code == 422, rejected.text
+                assert client.post("/api/v1/chat", content="x" * (256 * 1024 + 1), headers={"Content-Type": "application/json"}).status_code == 413
+                assert len(requests) == cloud_calls, "Invalid chat requests must not invoke a billable cloud call"
                 assert "careerpilot_session=" in client.get("/api/v1/model-config").request.headers["cookie"]
                 assert not stranger.get("/api/v1/model-config").json()["chat_configured"]
+                assert stranger.post("/api/v1/chat", json={"messages": [question]}).status_code == 503
                 second = stranger.post("/api/v1/model/configure", json={"api_key": "sk-browser-two", "region": "singapore", "model": "qwen-turbo"})
                 assert second.status_code == 200, second.text
                 assert stranger.post("/api/v1/model/ping").json()["model"] == "qwen-turbo"
                 assert requests[-1]["key"] == "sk-browser-two" and requests[-1]["host"] == "dashscope-intl.aliyuncs.com"
+                assert stranger.post("/api/v1/chat", json={"messages": [follow_up]}).status_code == 200
+                assert requests[-1]["key"] == "sk-browser-two" and requests[-1]["host"] == "dashscope-intl.aliyuncs.com"
+                assert json.loads(requests[-1]["body"]["messages"][1]["content"]) == [follow_up]
                 assert client.post("/api/v1/model/ping").json()["model"] == "qwen-plus"
                 assert requests[-1]["key"] == "sk-browser-one"
                 failed_change = client.post("/api/v1/model/configure", json={"api_key": "sk-invalid-secret", "model": "qwen-turbo"})

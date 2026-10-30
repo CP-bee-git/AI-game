@@ -17,6 +17,8 @@ make stop                   # 停止本项目进程
 
 网页展开「千问连接设置」填写**百炼通用 API Key**，默认 `qwen-plus`。中国内地/新加坡的 Key 与地域必须一致；AccessKey ID、账号密码、Coding/Token 专属 Key 不能用于通用接口。Key 只留在当前浏览器对应的服务端内存，8 小时会话、重启清除；不写入业务数据库。
 
+连接后即可使用「直接聊天」，无需上传或确认简历。对话仅保留在页面内存，刷新或清空后移除；每次调用携带最多 10 轮上下文、总计 24,000 字符，不自动附带简历或岗位数据。
+
 可选服务器默认值：复制 `.env.example` 为私有 `.env`，填写 `DASHSCOPE_API_KEY`、`QWEN_REGION`。公开演示建议默认 Key 留空，让用户在页面连接。
 
 ## 关键接口
@@ -25,6 +27,7 @@ make stop                   # 停止本项目进程
 | --- | --- |
 | `POST /model/configure` | `{api_key, region, model}`，先验证非思考 JSON 能力，再保存 |
 | `DELETE /model/configure` | 清除当前浏览器 Key |
+| `POST /chat` | `{messages:[{role:"user"\|"assistant",content}]}` → `{reply}`；无需简历，必须以用户问题结束；单条最多 4,000 字符 |
 | `POST /resumes/upload` | multipart 文件 + `privacy_acknowledged=true` |
 | `POST /resumes/{id}/profile` | 云模型抽取；随后 `/profile/confirm` 人工确认 |
 | `GET /resumes/{id}/analysis` | 五维星级、证据与 10 个职业匹配；必须已确认 |

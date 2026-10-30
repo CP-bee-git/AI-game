@@ -41,6 +41,31 @@ class ModelConfigureRequest(BaseModel):
         return value
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=21)
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("messages")
+    @classmethod
+    def validate_messages(cls, messages: list[ChatMessage]) -> list[ChatMessage]:
+        if len(messages) % 2 != 1 or any(message.role != ("user" if index % 2 == 0 else "assistant") for index, message in enumerate(messages)):
+            raise ValueError("对话需从用户消息开始，交替发送，并以用户问题结束。")
+        if sum(len(message.content) for message in messages) > 24000:
+            raise ValueError("对话内容过长，请清空对话后重试。")
+        return messages
+
+
+class ChatResponse(BaseModel):
+    reply: str = Field(min_length=1, max_length=4000)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
 class TaskStatus(BaseModel):
     task_id: UUID
     status: Literal["queued", "running", "succeeded", "failed"]

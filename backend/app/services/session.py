@@ -72,6 +72,7 @@ class BrowserSessionMiddleware:
     def __init__(self, app, api_prefix: str = "/api/v1", public_paths: tuple[str, ...] = ()):
         self.app = app
         self.configuration_path = f"{api_prefix}/model/configure"
+        self.chat_path = f"{api_prefix}/chat"
         self.public_paths = frozenset(public_paths)
 
     async def __call__(self, scope, receive, send):
@@ -123,10 +124,13 @@ class BrowserSessionMiddleware:
         async def bounded_receive():
             nonlocal received_bytes
             message = await receive()
-            if scope.get("path") == self.configuration_path:
+            path = scope.get("path")
+            if path in {self.configuration_path, self.chat_path}:
                 received_bytes += len(message.get("body", b""))
-                if received_bytes > 4096:
-                    raise HTTPException(status_code=413, detail="模型配置请求不能超过 4 KB")
+                limit = 4096 if path == self.configuration_path else 256 * 1024
+                if received_bytes > limit:
+                    detail = "模型配置请求不能超过 4 KB" if path == self.configuration_path else "聊天请求不能超过 256 KB"
+                    raise HTTPException(status_code=413, detail=detail)
             return message
 
         try:

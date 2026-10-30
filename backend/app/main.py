@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from io import BytesIO
+import json
 import logging
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -14,6 +15,8 @@ import pymupdf
 
 from app.config import get_settings
 from app.schemas import (
+    ChatRequest,
+    ChatResponse,
     HealthResponse,
     DiagnosisRequest,
     DiagnosticReport,
@@ -221,6 +224,21 @@ async def model_ping() -> ModelPingResponse:
         provider="阿里云百炼 · 千问",
         model=model_settings(settings).qwen_chat_model,
         models=models,
+    )
+
+
+@app.post(f"{settings.api_prefix}/chat", response_model=ChatResponse)
+async def chat(payload: ChatRequest) -> ChatResponse:
+    require_qwen_chat()
+    return await QwenCloudProvider(model_settings(settings)).chat_json(
+        "你是就业罗盘的求职咨询助手。用户无需上传简历即可与你讨论职业方向、岗位选择、简历表达和面试准备。"
+        "只根据这次对话里用户提供的信息回答，不声称已经读取简历、调用职业库或查询实时招聘数据。"
+        "不要编造用户经历、测评分数或岗位事实；信息不够时，问一两个具体问题。"
+        "使用自然、简洁的中文，通常控制在300字以内，必要时展开，但不超过1500字。"
+        "reply 中使用分段纯文本，不使用 Markdown 标记。"
+        "下面是按时间排列的对话，请接着最后一个用户问题作答。",
+        json.dumps([message.model_dump() for message in payload.messages], ensure_ascii=False),
+        ChatResponse,
     )
 
 
