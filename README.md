@@ -1,6 +1,6 @@
 # CareerPilot · 就业罗盘
 
-一个千问 API Key，完成简历解析、能力画像、岗位匹配、简历诊断、模拟面试和报告导出。大模型只调用阿里云百炼 / 通义千问云 API；无需下载模型、GPU、Docker 或模型推理服务。
+整理简历、对照岗位要求、练习面试并下载记录。模型功能使用阿里云百炼 / 千问 API，不需要部署模型。
 
 [在线演示](https://7e950176.r39.cpolar.top) · [公开源码](https://github.com/CP-bee-git/AI-game) · [开发者说明](docs/DEVELOPMENT.md)
 
@@ -22,7 +22,7 @@ cd AI-game
 ./start.sh
 ```
 
-启动器自动安装依赖、构建网页并在后台运行 API 和网站。打开 **http://127.0.0.1:3000**，在「连接千问」中填写阿里云百炼的 **Model Studio API Key**，验证成功即可使用；不是阿里云 AccessKey ID / Secret。
+启动器自动安装依赖、构建网页并在后台运行 API 和网站。打开 **http://127.0.0.1:3000**，展开「千问连接设置」，填写阿里云百炼的 **Model Studio API Key**，验证成功即可使用；不是阿里云 AccessKey ID / Secret。
 
 - 默认中国大陆节点、`qwen-plus`；也可选择新加坡节点，Key 与地域必须对应。
 - 图片和扫描 PDF 使用同一 Key 调用 `qwen-vl-plus`；可选文字 PDF / DOCX 在应用中解析。

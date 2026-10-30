@@ -3,10 +3,10 @@ import { readFile } from "node:fs/promises";
 
 test("Chinese synthetic demo completes profile stars, ten real careers, matching, diagnosis, interview and downloads", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
+  await page.getByRole("button", { name: "载入示例" }).click();
   await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
   await expect(page.locator("#analysis")).toHaveCount(0);
-  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await page.getByRole("button", { name: "确认信息，查看匹配" }).click();
   await expect(page.locator(".career-row")).toHaveCount(10);
   await expect(page.locator(".dimension").first()).toBeVisible();
   await expect(page.locator(".dimension").first().getByRole("img")).toHaveAttribute("aria-label", /5 星/);
@@ -15,7 +15,7 @@ test("Chinese synthetic demo completes profile stars, ten real careers, matching
   await page.locator(".career-source").first().locator("summary").click();
   await expect(page.locator(".career-source").first().getByRole("link")).toHaveAttribute("href", /https:\/\/www\.onetonline\.org\/link\/summary\//);
   const profileDownloadEvent = page.waitForEvent("download");
-  await page.getByRole("button", { name: "下载完整画像报告 HTML" }).click();
+  await page.getByRole("button", { name: "下载简历分析报告" }).click();
   const profileDownload = await profileDownloadEvent;
   expect(profileDownload.suggestedFilename()).toBe("careerpilot-profile.html");
   const profilePath = await profileDownload.path();
@@ -47,9 +47,9 @@ test("Chinese synthetic demo completes profile stars, ten real careers, matching
 test("China demo loads on a phone without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
+  await page.getByRole("button", { name: "载入示例" }).click();
   await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
-  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await page.getByRole("button", { name: "确认信息，查看匹配" }).click();
   await expect(page.locator(".career-row")).toHaveCount(10);
   await expect(page.locator(".profile-analysis")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -89,7 +89,7 @@ test("a fresh browser establishes its session before delayed demo metadata and p
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await metadataRequest;
-  const start = page.getByRole("button", { name: "加载中国样例 · 合成简历" });
+  const start = page.getByRole("button", { name: "载入示例" });
   try {
     expect(metadataCookie).toContain("careerpilot_session=");
     await expect(start).toBeDisabled();
@@ -100,7 +100,7 @@ test("a fresh browser establishes its session before delayed demo metadata and p
   await start.click();
   await expect(page.getByLabel("技能（可修改，逗号分隔）")).toHaveValue(/Python/);
   const confirmed = page.waitForResponse((response) => response.url().includes("/profile/confirm") && response.request().method() === "POST");
-  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await page.getByRole("button", { name: "确认信息，查看匹配" }).click();
   expect((await confirmed).ok()).toBe(true);
   await expect(page.getByRole("button", { name: "开始匹配" })).toBeVisible();
 });
@@ -117,8 +117,8 @@ test("confirmed profile remains usable when career analysis fails and can be ret
     }
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "加载中国样例 · 合成简历" }).click();
-  await page.getByRole("button", { name: "确认画像并进入岗位匹配" }).click();
+  await page.getByRole("button", { name: "载入示例" }).click();
+  await page.getByRole("button", { name: "确认信息，查看匹配" }).click();
   await expect(page.locator("#analysis").getByRole("alert")).toContainText("暂时不可用");
   await expect(page.getByRole("button", { name: "开始匹配" })).toBeVisible();
   await page.getByRole("button", { name: "重新加载分析" }).click();

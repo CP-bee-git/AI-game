@@ -4,7 +4,7 @@ import re
 from collections.abc import Mapping
 
 
-NOTICE = "星级仅表示已确认画像的信息完整度与简历原文证据覆盖：每满足一项公开检查得一星，最高五星。不是能力、人格、职业资格或录用概率测评。修改画像会重新计算。"
+NOTICE = "每项资料有 5 个检查点，每满足 1 项记 1 星。只统计你确认的信息和能在简历中找到的原文，修改后会重算。星数不评价能力、人格、职业资格或录用可能性。"
 
 
 def _text(value: object) -> str:
@@ -57,7 +57,7 @@ def profile_analysis(profile: dict, blocks: list[dict]) -> dict:
             "name": name,
             "score": len(passed),
             "evidence": evidence,
-            "note": "已具备：" + ("、".join(passed) or "暂无") + "；待补充：" + ("、".join(missing) or "本维度检查项完整"),
+            "note": "已写明：" + ("、".join(passed) or "暂无") + ("；还缺：" + "、".join(missing) if missing else "。这一项已写完整。"),
             "checks": [{"label": label, "passed": bool(present)} for label, present in checks],
         })
 

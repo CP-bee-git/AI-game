@@ -2,6 +2,8 @@
 
 技术栈：Next.js 16 / React 19、FastAPI / Python 3.12+、SQLite；Node.js 24、pnpm 11。单实例、单 API 进程。
 
+页面样式集中在 `frontend/app/globals.css`：暖白 `#FFFDF8`、正文 `#292D28`、交互色 `#355E50`。标题使用 Noto Serif / 宋体类系统字体，正文使用苹方、微软雅黑或 Noto Sans，不加载外部字体。文案直接说明操作和结果，来源、评分口径等长说明默认收起。
+
 ## 启动与发布
 
 ```bash
@@ -11,7 +13,7 @@
 make stop                   # 停止本项目进程
 ```
 
-网页在「连接千问」填写**百炼通用 API Key**，默认 `qwen-plus`。中国内地/新加坡的 Key 与地域必须一致；AccessKey ID、账号密码、Coding/Token 专属 Key 不能用于通用接口。Key 只留在当前浏览器对应的服务端内存，8 小时会话、重启清除；不写入业务数据库。
+网页展开「千问连接设置」填写**百炼通用 API Key**，默认 `qwen-plus`。中国内地/新加坡的 Key 与地域必须一致；AccessKey ID、账号密码、Coding/Token 专属 Key 不能用于通用接口。Key 只留在当前浏览器对应的服务端内存，8 小时会话、重启清除；不写入业务数据库。
 
 可选服务器默认值：复制 `.env.example` 为私有 `.env`，填写 `DASHSCOPE_API_KEY`、`QWEN_REGION`。公开演示建议默认 Key 留空，让用户在页面连接。
 

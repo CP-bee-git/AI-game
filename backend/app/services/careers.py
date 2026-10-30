@@ -143,8 +143,8 @@ def career_matches(profile: dict, limit: int = 10) -> dict:
             if len(gaps) == 5:
                 break
         reason = (
-            f"已确认技能中 {len(matched)}/{len(candidates)} 项与官方技能或软件例示对应：{'、'.join(matched)}。"
-            if matched else "缺少已确认技能与该职业公开技能之间的明确对应证据，暂记0分；仅供探索，需补充技能证据。"
+            f"你填写的 {len(candidates)} 项技能中，有 {len(matched)} 项出现在这个职业的参考资料里：{'、'.join(matched)}。"
+            if matched else "你填写的技能暂时没有与这个条目对应，记为 0 分。可以先阅读职业说明，再补充确实掌握的技能。"
         )
         scored.append({
             "code": occupation["code"],
