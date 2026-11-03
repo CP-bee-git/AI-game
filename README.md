@@ -67,6 +67,10 @@ cp .env.example .env  # 已有 .env 时不要重复覆盖
 
 ## 维护与验证
 
+## 界面设计
+
+工作台界面采用「罗盘」设计语言：靛蓝紫渐变主色（`#4F46C8` → `#7C6FF0`）承载按钮、品牌图标与进度条，琥珀色（`#E8A33D`）用于星级评分等强调信息；页面背景带径向渐变光晕，首页标题区有罗盘 SVG 装饰。动效包括卡片渐入上浮、悬停浮起与按钮按压反馈，并兼容 `prefers-reduced-motion`。样式集中在 `frontend/app/globals.css`，设计令牌（圆角、阴影、渐变）定义在 `:root`。
+
 ```bash
 make stop          # 停止网站、API 和本项目 cpolar 隧道
 make setup         # 只安装依赖
