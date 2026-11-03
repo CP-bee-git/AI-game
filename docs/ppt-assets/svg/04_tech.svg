@@ -2,6 +2,11 @@
   <rect width="1280" height="720" fill="#f6f5fc"/>
   <text x="90" y="105" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="20" letter-spacing="4" fill="#4f46c8">03 · 技术架构</text>
   <text x="86" y="172" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="46" font-weight="600" fill="#1b1c2a">前后端分离，云端大模型</text>
+  <g transform="translate(1080,130)" opacity=".8">
+    <path d="M-70 20 a26 26 0 0 1 4 -51 a34 34 0 0 1 64 -8 a24 24 0 0 1 32 23 a20 20 0 0 1 -6 36 z" fill="#EEEDFB" stroke="#7C6FF0" stroke-width="2.5"/>
+    <path d="M-30 20 v24 M0 20 v30 M30 20 v24" stroke="#7C6FF0" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="-30" cy="52" r="4" fill="#E8A33D"/><circle cx="0" cy="58" r="4" fill="#4F46C8"/><circle cx="30" cy="52" r="4" fill="#7C6FF0"/>
+  </g>
   <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
     <rect x="90" y="240" width="320" height="300" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
     <rect x="90" y="240" width="320" height="64" rx="20" fill="#4f46c8"/>

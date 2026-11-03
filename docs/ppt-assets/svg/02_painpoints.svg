@@ -34,5 +34,11 @@
       <rect x="30" y="270" width="150" height="8" rx="4" fill="#e8a33d"/>
     </g>
   </g>
+  <g opacity=".5">
+    <circle cx="1180" cy="120" r="60" fill="none" stroke="#D9D5F0" stroke-width="2" stroke-dasharray="3 8"/>
+    <circle cx="1120" cy="90" r="14" fill="#EEEDFB"/>
+    <circle cx="1230" cy="150" r="9" fill="#F4C466" opacity=".7"/>
+    <path d="M1080 620 q60 -50 120 0" stroke="#D9D5F0" stroke-width="2" fill="none" stroke-dasharray="3 8"/>
+  </g>
   <text x="90" y="650" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="22" fill="#4f46c8">就业罗盘：用一个工作台把「认知 → 匹配 → 演练」连成闭环</text>
 </svg>

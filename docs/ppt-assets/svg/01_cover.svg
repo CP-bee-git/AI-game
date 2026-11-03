@@ -17,6 +17,13 @@
     <path d="M52 -52 L18 18 L-52 52 L-18 -18 Z" fill="url(#gold)"/>
     <circle r="14" fill="#ffffff" stroke="url(#gold)" stroke-width="5"/>
   </g>
+  <g opacity=".8">
+    <path d="M240 620 L330 560 L430 600" stroke="#7C6FF0" stroke-width="1.5" stroke-dasharray="2 6"/>
+    <circle cx="240" cy="620" r="5" fill="#F4C466"/>
+    <circle cx="330" cy="560" r="4" fill="#C9C4F2"/>
+    <circle cx="430" cy="600" r="6" fill="#7C6FF0"/>
+    <path d="M150 560 l5 11 11 5 -11 5 -5 11 -5 -11 -11 -5 11 -5 z" fill="#F4C466" opacity=".9"/>
+  </g>
   <text x="110" y="240" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="26" letter-spacing="6" fill="#c9c4f2">AI 求职工作台 · CareerPilot</text>
   <text x="106" y="330" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="72" font-weight="600" fill="#ffffff">就业罗盘</text>
   <text x="110" y="404" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="28" fill="#e4e1fa">读懂简历 · 连接职业方向 · 准备下一次机会</text>

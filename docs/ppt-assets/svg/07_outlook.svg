@@ -2,8 +2,14 @@
   <rect width="1280" height="720" fill="#f6f5fc"/>
   <text x="90" y="105" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="20" letter-spacing="4" fill="#4f46c8">06 · 前景展望</text>
   <text x="86" y="172" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="46" font-weight="600" fill="#1b1c2a">从工具到求职基础设施</text>
+  <g transform="translate(1130,140)" opacity=".8">
+    <path d="M-40 40 L10 -10" stroke="#211D4E" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="18" cy="-18" r="16" fill="none" stroke="#211D4E" stroke-width="5"/>
+    <path d="M-52 52 l12 -12 M-30 52 l8 -30" stroke="#211D4E" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="60" cy="-46" r="4" fill="#E8A33D"/><circle cx="86" cy="-18" r="3" fill="#7C6FF0"/><circle cx="46" cy="-70" r="3" fill="#4F46C8"/>
+  </g>
   <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
-    <g transform="translate(90,230)">
+        <g transform="translate(90,230)">
       <rect width="530" height="180" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
       <rect width="8" height="180" rx="4" fill="#4f46c8"/>
       <text x="40" y="55" font-size="23" font-weight="600" fill="#1b1c2a">近期 · 把体验做厚</text>

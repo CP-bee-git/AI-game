@@ -2,6 +2,11 @@
   <rect width="1280" height="720" fill="#f6f5fc"/>
   <text x="90" y="105" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="20" letter-spacing="4" fill="#4f46c8">02 · 项目逻辑</text>
   <text x="86" y="172" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="46" font-weight="600" fill="#1b1c2a">一条主线，三个引擎</text>
+  <g transform="translate(1120,140)" opacity=".55">
+    <circle r="42" fill="none" stroke="#7C6FF0" stroke-width="3"/>
+    <circle r="16" fill="none" stroke="#7C6FF0" stroke-width="3"/>
+    <path d="M0 -58 v-14 M0 58 v14 M-58 0 h-14 M58 0 h14 M41 -41 l-10 -10 M-41 41 l10 10 M41 41 l-10 10 M-41 -41 l10 -10" stroke="#7C6FF0" stroke-width="5" stroke-linecap="round"/>
+  </g>
   <defs>
     <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46c8"/><stop offset="1" stop-color="#7c6ff0"/></linearGradient>
   </defs>

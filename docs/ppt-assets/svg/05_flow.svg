@@ -35,8 +35,13 @@
       <text x="1045" y="434" font-size="16" fill="#5d6072">多轮问答 + 逐题评分</text>
     </g>
   </g>
+  <g transform="translate(1150,160) rotate(18)" opacity=".85">
+    <path d="M-46 0 L34 -20 L14 0 L34 20 Z" fill="#4F46C8"/>
+    <path d="M-46 0 L-58 -12 M-46 0 L-58 12" stroke="#7C6FF0" stroke-width="3" stroke-linecap="round"/>
+    <path d="M-90 -30 q-30 30 0 60" stroke="#C9C4F2" stroke-width="2" fill="none" stroke-dasharray="3 7"/>
+  </g>
   <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
-    <rect x="90" y="510" width="530" height="130" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
+        <rect x="90" y="510" width="530" height="130" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
     <text x="120" y="558" font-size="21" font-weight="600" fill="#3b34a3">随时可用「直接聊天」</text>
     <text x="120" y="596" font-size="17" fill="#5d6072">不上传简历也能问职业方向、面试准备，对话只存页面内存</text>
     <rect x="660" y="510" width="530" height="130" rx="16" fill="#ffffff" stroke="#e7e6f0"/>

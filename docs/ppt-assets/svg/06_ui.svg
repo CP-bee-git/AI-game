@@ -24,8 +24,12 @@
     <rect x="252" y="566" width="418" height="44" rx="22" fill="#4f46c8"/>
     <text x="330" y="595" font-size="17" fill="#ffffff">主按钮 · 渐变</text>
   </g>
+  <g opacity=".6">
+    <path d="M760 200 l6 14 14 6 -14 6 -6 14 -6 -14 -14 -6 14 -6 z" fill="#E8A33D"/>
+    <path d="M1200 620 l5 11 11 5 -11 5 -5 11 -5 -11 -11 -5 11 -5 z" fill="#7C6FF0"/>
+  </g>
   <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
-    <g transform="translate(780,240)">
+        <g transform="translate(780,240)">
       <rect width="410" height="115" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
       <circle cx="45" cy="57" r="22" fill="#eeedfb"/>
       <text x="32" y="66" font-size="24" fill="#4f46c8">色</text>
