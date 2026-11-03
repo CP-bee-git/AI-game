@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN">
+  <rect width="1280" height="720" fill="#f6f5fc"/>
+  <text x="90" y="105" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="20" letter-spacing="4" fill="#4f46c8">06 · 前景展望</text>
+  <text x="86" y="172" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="46" font-weight="600" fill="#1b1c2a">从工具到求职基础设施</text>
+  <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
+    <g transform="translate(90,230)">
+      <rect width="530" height="180" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
+      <rect width="8" height="180" rx="4" fill="#4f46c8"/>
+      <text x="40" y="55" font-size="23" font-weight="600" fill="#1b1c2a">近期 · 把体验做厚</text>
+      <text x="40" y="98" font-size="17" fill="#5d6072">接入实时招聘数据源，扩充职业库覆盖</text>
+      <text x="40" y="130" font-size="17" fill="#5d6072">语音面试与回答转写，贴近真实场景</text>
+    </g>
+    <g transform="translate(660,230)">
+      <rect width="530" height="180" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
+      <rect width="8" height="180" rx="4" fill="#7c6ff0"/>
+      <text x="40" y="55" font-size="23" font-weight="600" fill="#1b1c2a">中期 · 把协同做通</text>
+      <text x="40" y="98" font-size="17" fill="#5d6072">多实例部署与账户体系，支持长期成长档案</text>
+      <text x="40" y="130" font-size="17" fill="#5d6072">高校就业指导中心 / 社团批量使用模式</text>
+    </g>
+    <g transform="translate(90,440)">
+      <rect width="530" height="180" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
+      <rect width="8" height="180" rx="4" fill="#e8a33d"/>
+      <text x="40" y="55" font-size="23" font-weight="600" fill="#1b1c2a">远期 · 把闭环做深</text>
+      <text x="40" y="98" font-size="17" fill="#5d6072">投递追踪与复盘回流，匹配模型持续校准</text>
+      <text x="40" y="130" font-size="17" fill="#5d6072">从「找工作」延伸到「职业成长路径」</text>
+    </g>
+    <g transform="translate(660,440)">
+      <rect width="530" height="180" rx="20" fill="#211d4e"/>
+      <text x="40" y="55" font-size="23" font-weight="600" fill="#f4c466">不变的底线</text>
+      <text x="40" y="98" font-size="17" fill="#c9c4f2">可解释优先，不做录用概率黑箱</text>
+      <text x="40" y="130" font-size="17" fill="#c9c4f2">隐私优先，密钥与数据最小化留存</text>
+    </g>
+  </g>
+</svg>

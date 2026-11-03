@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#211d4e"/><stop offset=".55" stop-color="#4f46c8"/><stop offset="1" stop-color="#7c6ff0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4c466"/><stop offset="1" stop-color="#e8a33d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <circle cx="1120" cy="120" r="260" fill="#ffffff" opacity=".06"/>
+  <circle cx="120" cy="640" r="300" fill="#ffffff" opacity=".05"/>
+  <g transform="translate(940,360)" opacity=".9">
+    <circle r="150" fill="none" stroke="#ffffff" stroke-width="3" opacity=".5"/>
+    <circle r="122" fill="none" stroke="#ffffff" stroke-width="1.5" opacity=".3" stroke-dasharray="4 10"/>
+    <path d="M0 -150 v24 M0 126 v24 M-150 0 h24 M126 0 h24" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+    <path d="M52 -52 L18 18 L-52 52 L-18 -18 Z" fill="url(#gold)"/>
+    <circle r="14" fill="#ffffff" stroke="url(#gold)" stroke-width="5"/>
+  </g>
+  <text x="110" y="240" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="26" letter-spacing="6" fill="#c9c4f2">AI 求职工作台 · CareerPilot</text>
+  <text x="106" y="330" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="72" font-weight="600" fill="#ffffff">就业罗盘</text>
+  <text x="110" y="404" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="28" fill="#e4e1fa">读懂简历 · 连接职业方向 · 准备下一次机会</text>
+  <rect x="110" y="470" width="400" height="56" rx="28" fill="none" stroke="url(#gold)" stroke-width="2"/>
+  <text x="140" y="506" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="21" fill="#f4c466">项目逻辑 · 流程 · 应用 · 展望</text>
+  <text x="110" y="640" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="17" fill="#a49ee0">github.com/CP-bee-git/AI-game</text>
+</svg>

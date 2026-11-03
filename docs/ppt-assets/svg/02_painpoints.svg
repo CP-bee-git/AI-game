@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN">
+  <rect width="1280" height="720" fill="#f6f5fc"/>
+  <text x="90" y="105" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="20" letter-spacing="4" fill="#4f46c8">01 · 为什么做</text>
+  <text x="86" y="172" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="46" font-weight="600" fill="#1b1c2a">求职路上的三个断点</text>
+  <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
+    <g transform="translate(90,230)">
+      <rect width="350" height="330" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
+      <circle cx="56" cy="62" r="26" fill="#eeedfb"/>
+      <text x="45" y="72" font-size="26" fill="#4f46c8">①</text>
+      <text x="30" y="130" font-size="26" font-weight="600" fill="#1b1c2a">看不懂自己</text>
+      <text x="30" y="178" font-size="19" fill="#5d6072">简历写了很多，</text>
+      <text x="30" y="210" font-size="19" fill="#5d6072">却不知道自己的能力画像</text>
+      <text x="30" y="242" font-size="19" fill="#5d6072">在市场上处于什么位置。</text>
+      <rect x="30" y="270" width="150" height="8" rx="4" fill="#7c6ff0"/>
+    </g>
+    <g transform="translate(465,230)">
+      <rect width="350" height="330" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
+      <circle cx="56" cy="62" r="26" fill="#eeedfb"/>
+      <text x="45" y="72" font-size="26" fill="#4f46c8">②</text>
+      <text x="30" y="130" font-size="26" font-weight="600" fill="#1b1c2a">对不上岗位</text>
+      <text x="30" y="178" font-size="19" fill="#5d6072">岗位要求零散抽象，</text>
+      <text x="30" y="210" font-size="19" fill="#5d6072">缺乏可解释的匹配依据</text>
+      <text x="30" y="242" font-size="19" fill="#5d6072">与明确的技能缺口清单。</text>
+      <rect x="30" y="270" width="150" height="8" rx="4" fill="#4f46c8"/>
+    </g>
+    <g transform="translate(840,230)">
+      <rect width="350" height="330" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
+      <circle cx="56" cy="62" r="26" fill="#eeedfb"/>
+      <text x="45" y="72" font-size="26" fill="#4f46c8">③</text>
+      <text x="30" y="130" font-size="26" font-weight="600" fill="#1b1c2a">练不好面试</text>
+      <text x="30" y="178" font-size="19" fill="#5d6072">没有低成本的模拟环境，</text>
+      <text x="30" y="210" font-size="19" fill="#5d6072">回答质量缺少即时评分</text>
+      <text x="30" y="242" font-size="19" fill="#5d6072">与可执行的修改建议。</text>
+      <rect x="30" y="270" width="150" height="8" rx="4" fill="#e8a33d"/>
+    </g>
+  </g>
+  <text x="90" y="650" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="22" fill="#4f46c8">就业罗盘：用一个工作台把「认知 → 匹配 → 演练」连成闭环</text>
+</svg>

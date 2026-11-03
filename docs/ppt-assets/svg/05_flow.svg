@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN">
+  <rect width="1280" height="720" fill="#f6f5fc"/>
+  <text x="90" y="105" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="20" letter-spacing="4" fill="#4f46c8">04 · 应用流程</text>
+  <text x="86" y="172" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="46" font-weight="600" fill="#1b1c2a">五步走完求职准备</text>
+  <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
+    <line x1="150" y1="330" x2="1130" y2="330" stroke="#d9d5f0" stroke-width="4"/>
+    <g>
+      <circle cx="170" cy="330" r="30" fill="#4f46c8"/>
+      <text x="158" y="340" font-size="24" fill="#ffffff" font-weight="600">1</text>
+      <text x="125" y="400" font-size="22" font-weight="600" fill="#1b1c2a">上传简历</text>
+      <text x="110" y="434" font-size="16" fill="#5d6072">PDF / DOCX / 图片 ≤10MB</text>
+    </g>
+    <g>
+      <circle cx="410" cy="330" r="30" fill="#4f46c8"/>
+      <text x="398" y="340" font-size="24" fill="#ffffff" font-weight="600">2</text>
+      <text x="365" y="400" font-size="22" font-weight="600" fill="#1b1c2a">核对信息</text>
+      <text x="345" y="434" font-size="16" fill="#5d6072">画像抽取 + 人工确认</text>
+    </g>
+    <g>
+      <circle cx="650" cy="330" r="30" fill="#4f46c8"/>
+      <text x="638" y="340" font-size="24" fill="#ffffff" font-weight="600">3</text>
+      <text x="605" y="400" font-size="22" font-weight="600" fill="#1b1c2a">比较岗位</text>
+      <text x="583" y="434" font-size="16" fill="#5d6072">10 个职业方向 + 岗位匹配分</text>
+    </g>
+    <g>
+      <circle cx="890" cy="330" r="30" fill="#4f46c8"/>
+      <text x="878" y="340" font-size="24" fill="#ffffff" font-weight="600">4</text>
+      <text x="845" y="400" font-size="22" font-weight="600" fill="#1b1c2a">修改简历</text>
+      <text x="823" y="434" font-size="16" fill="#5d6072">诊断清单 + 岗位关键词</text>
+    </g>
+    <g>
+      <circle cx="1110" cy="330" r="30" fill="#e8a33d"/>
+      <text x="1098" y="340" font-size="24" fill="#ffffff" font-weight="600">5</text>
+      <text x="1065" y="400" font-size="22" font-weight="600" fill="#1b1c2a">练习面试</text>
+      <text x="1045" y="434" font-size="16" fill="#5d6072">多轮问答 + 逐题评分</text>
+    </g>
+  </g>
+  <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
+    <rect x="90" y="510" width="530" height="130" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
+    <text x="120" y="558" font-size="21" font-weight="600" fill="#3b34a3">随时可用「直接聊天」</text>
+    <text x="120" y="596" font-size="17" fill="#5d6072">不上传简历也能问职业方向、面试准备，对话只存页面内存</text>
+    <rect x="660" y="510" width="530" height="130" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
+    <text x="690" y="558" font-size="21" font-weight="600" fill="#3b34a3">每一步都可下载报告</text>
+    <text x="690" y="596" font-size="17" fill="#5d6072">画像、诊断、面试均支持 HTML（含星图，可打印 PDF）与 JSON</text>
+  </g>
+</svg>

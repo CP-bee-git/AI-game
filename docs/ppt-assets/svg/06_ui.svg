@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN">
+  <rect width="1280" height="720" fill="#f6f5fc"/>
+  <text x="90" y="105" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="20" letter-spacing="4" fill="#4f46c8">05 · 界面设计</text>
+  <text x="86" y="172" font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="46" font-weight="600" fill="#1b1c2a">新视觉：罗盘灵感 × 渐变 × 动效</text>
+  <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
+    <rect x="90" y="230" width="640" height="400" rx="20" fill="#ffffff" stroke="#e7e6f0"/>
+    <rect x="90" y="230" width="640" height="46" rx="20" fill="#eeedfb"/>
+    <circle cx="122" cy="253" r="7" fill="#e8a33d"/><circle cx="146" cy="253" r="7" fill="#7c6ff0"/><circle cx="170" cy="253" r="7" fill="#4f46c8"/>
+    <rect x="110" y="300" width="110" height="310" rx="12" fill="#faf9fe" stroke="#e7e6f0"/>
+    <rect x="126" y="322" width="52" height="46" rx="10" fill="#4f46c8"/>
+    <rect x="126" y="392" width="78" height="14" rx="7" fill="#d9d5f0"/>
+    <rect x="126" y="424" width="78" height="14" rx="7" fill="#eeedfb" stroke="#4f46c8"/>
+    <rect x="126" y="456" width="78" height="14" rx="7" fill="#eeedfb"/>
+    <rect x="126" y="488" width="78" height="14" rx="7" fill="#eeedfb"/>
+    <text x="252" y="340" font-size="15" letter-spacing="2" fill="#4f46c8">求职工作台</text>
+    <text x="250" y="384" font-size="28" font-weight="600" fill="#1b1c2a">下一步，从了解自己开始。</text>
+    <g transform="translate(610,400)" opacity=".85">
+      <circle r="46" fill="none" stroke="#4f46c8" stroke-width="2.5" opacity=".6"/>
+      <path d="M17 -17 L6 6 L-17 17 L-6 -6 Z" fill="#e8a33d"/>
+      <circle r="5" fill="#ffffff" stroke="#4f46c8" stroke-width="2.5"/>
+    </g>
+    <rect x="252" y="430" width="200" height="120" rx="12" fill="#ffffff" stroke="#e7e6f0"/>
+    <rect x="470" y="430" width="200" height="120" rx="12" fill="#ffffff" stroke="#e7e6f0"/>
+    <rect x="252" y="566" width="418" height="44" rx="22" fill="#4f46c8"/>
+    <text x="330" y="595" font-size="17" fill="#ffffff">主按钮 · 渐变</text>
+  </g>
+  <g font-family="IBM Plex Sans SC, PingFang SC, Noto Sans CJK SC, sans-serif">
+    <g transform="translate(780,240)">
+      <rect width="410" height="115" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
+      <circle cx="45" cy="57" r="22" fill="#eeedfb"/>
+      <text x="32" y="66" font-size="24" fill="#4f46c8">色</text>
+      <text x="85" y="48" font-size="20" font-weight="600" fill="#1b1c2a">靛蓝紫渐变 + 琥珀点缀</text>
+      <text x="85" y="82" font-size="16" fill="#5d6072">#4F46C8 → #7C6FF0 · 星级 #E8A33D</text>
+    </g>
+    <g transform="translate(780,375)">
+      <rect width="410" height="115" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
+      <circle cx="45" cy="57" r="22" fill="#eeedfb"/>
+      <text x="32" y="66" font-size="24" fill="#4f46c8">字</text>
+      <text x="85" y="48" font-size="20" font-weight="600" fill="#1b1c2a">字体层级强化</text>
+      <text x="85" y="82" font-size="16" fill="#5d6072">标题加粗收紧 + 渐变裁剪，本地子集无外链</text>
+    </g>
+    <g transform="translate(780,510)">
+      <rect width="410" height="115" rx="16" fill="#ffffff" stroke="#e7e6f0"/>
+      <circle cx="45" cy="57" r="22" fill="#eeedfb"/>
+      <text x="32" y="66" font-size="24" fill="#4f46c8">动</text>
+      <text x="85" y="48" font-size="20" font-weight="600" fill="#1b1c2a">克制的动效</text>
+      <text x="85" y="82" font-size="16" fill="#5d6072">卡片渐入、悬停浮起、罗盘漂浮，兼容减弱动效</text>
+    </g>
+  </g>
+</svg>
