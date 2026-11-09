@@ -91,6 +91,25 @@ class DifyChecks(unittest.TestCase):
         with self.assertRaises(CloudModelError):
             asyncio.run(tools.execute("media_status", {**payload, "owner": "browser-two"}))
 
+    def test_bailian_routes_deepseek_and_qwen_with_the_same_key(self):
+        self.settings.deepseek_provider = "bailian"
+        requests = []
+        def upstream(request):
+            body = json.loads(request.content)
+            requests.append((request.url.host, request.headers["authorization"], body))
+            return httpx.Response(200, json={"choices": [{"message": {"content": '{"reply":"连接正常"}'}}]})
+        from app.schemas import ChatResponse
+        tools = AgentTools(self.settings, httpx.MockTransport(upstream))
+        for provider in ("deepseek", "qwen"):
+            asyncio.run(tools.complete(provider, "检查连接", {}, ChatResponse))
+        self.assertEqual([request[0] for request in requests], ["dashscope.aliyuncs.com"] * 2)
+        self.assertEqual([request[1] for request in requests], ["Bearer test-qwen"] * 2)
+        self.assertEqual(requests[0][2]["model"], "deepseek-v4.1-flash")
+        for host, token, body in requests:
+            self.assertFalse(body["enable_thinking"])
+            self.assertNotIn("thinking", body)
+        self.assertEqual(tools.credentials("ark")[1], "https://ark.cn-beijing.volces.com/api/v3")
+
     def test_business_flow_uses_dify_and_keeps_browser_resources_isolated(self):
         calls = []
         summaries = 0

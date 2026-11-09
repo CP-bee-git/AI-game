@@ -50,9 +50,9 @@ flowchart LR
 
 ## 3. 本机部署
 
-Dify 固定为官方 **1.19.0**，采用其完整 Docker 目录和 Compose 配置。官方要求 Compose **2.35.0+**；不能只复制一个 YAML，因为它还引用 `envs/`、Nginx 和代理模板。源码由 GitHub API 下载，版本和 commit SHA 记录在 `.private/dify/version.json`，不会使用来源不明的同步镜像替换官方服务。
+Dify 固定为官方 **1.19.0**，采用其完整 Docker 目录和 Compose 配置。官方要求 Compose **2.35.0+**；不能只复制一个 YAML，因为它还引用 `envs/`、Nginx 和代理模板。源码由 GitHub API 下载，版本和 commit SHA 记录在 `.private/dify/version.json`。本机 Docker Hub 连接被重置，实际通过 `docker.m.daocloud.io` 拉取同名同版本镜像并重新标记为 Compose 中的原始标签；镜像 ID 和仓库摘要保存在 `.private/dify/image-provenance.json`。记录摘要不等于已经用独立可信渠道验证镜像签名。
 
-本次主机检查：x86_64，约 14GiB 内存，磁盘剩余约12GiB；**未安装 Docker，当前用户无法无密码 sudo**。已准备部署文件，容器还未启动。建议在首次拉取前保留至少20GiB可用磁盘，避免镜像和数据卷耗尽根分区；此建议不是已执行的清理操作。
+实际安装：Ubuntu 26.04 x86_64，Docker Engine **29.1.3**、Compose **2.40.3**；管理员通过系统认证窗口授权安装，Docker 服务已设为开机启动，当前用户已加入 docker 组。13个必需容器正在运行，API、PostgreSQL、Redis和代码Sandbox健康检查通过。独立Agent本地沙箱及其代理未启用。安装后根分区约剩 **2.1GiB**，不适合继续保存大量媒体；未擅自删除用户文件，长期使用前需要释放或扩充存储。
 
 ### 3.1 安装 Docker（本机管理员终端）
 
@@ -62,31 +62,30 @@ sudo bash dify/install-docker.sh
 sudo docker compose version
 ```
 
-安装脚本使用阿里云 Docker CE 的 Ubuntu 包镜像和官方 GPG 签名，不改写主机原有软件源。镜像拉取先使用官方仓库；若 Docker Hub 不可达，可由管理员把**账号专属、已验证可达的**镜像加速地址合并进现有 `/etc/docker/daemon.json`，不能整文件覆盖，也不把第三方随机镜像地址当成默认可信来源。首次可用 `sudo` 执行 Docker 命令；普通用户访问 Docker socket 需由管理员单独配置。
+安装脚本优先使用现有Ubuntu软件源的 `docker.io` 和 `docker-compose-v2`；本机实际从清华镜像下载安装。仅在发行版无对应包时回退阿里云Docker CE源。没有覆盖主机软件源或daemon.json。当前会话若尚未刷新附加组，`dify/compose.sh` 会通过 `sg docker` 执行；重新登录后可直接访问Docker。
 
 ### 3.2 准备并拉起 Dify
 
 ```bash
 python3 scripts/prepare_dify.py prepare
 sudo bash dify/compose.sh config --quiet
-sudo bash dify/compose.sh pull
-sudo bash dify/compose.sh up -d
-sudo bash dify/compose.sh ps
+bash dify/compose.sh up -d --pull never api worker worker_beat api_websocket web nginx db_postgres redis sandbox ssrf_proxy plugin_daemon agent_backend weaviate
+bash dify/compose.sh ps
 ```
 
-控制台只发布 `127.0.0.1:8088`，HTTPS 备用端口 `8448`。插件调试端口不向宿主机发布。源文件及卷位于 `.runtime/dify/docker/`，凭据位于 `.private/dify/`；均被 Git 忽略。首次生成随机数据库、Redis、插件和 Sandbox 凭据；重复 prepare 保留已有值，不自动轮换。
+以上命令复用本机已缓存镜像；在新主机需先拉取镜像。控制台只发布 `127.0.0.1:8088`，HTTPS备用端口8448，尚未配置HTTPS证书。插件调试端口不向宿主机发布。源文件及卷位于 `.runtime/dify/docker/`，凭据位于 `.private/dify/`；均被Git忽略。首次生成随机数据库、Redis、插件和Sandbox凭据；`SANDBOX_API_KEY` 与 `CODE_EXECUTION_API_KEY` 必须一致，已在真机修正并验通。
 
-打开 `http://127.0.0.1:8088/install` 初始化管理员。本机工具地址为 `http://host.docker.internal:8091`；代理仅为该域名允许私网访问，不关闭整套 SSRF 防护。
+管理员已初始化，账号 `admin@careerpilot.local`；随机密码只保存在 `.private/dify/admin.json`，未输出或提交。打开 `http://127.0.0.1:8088/signin` 登录。本机工具地址为 `http://host.docker.internal:8091`；代理仅为该域名允许私网访问，不关闭整套SSRF防护。
 
 ### 3.3 启动工具与业务服务
 
 ```bash
-bash dify/services.sh start
+bash dify/services.sh install
 bash dify/services.sh status
 curl http://127.0.0.1:8010/api/v1/orchestration
 ```
 
-使用 systemd 用户临时服务保活，避免 shell 结束导致 localhost 消失；主机注销或重启后再执行 start。不会占用 Co-Worker 的8000端口。工具在检测到 Docker 后优先绑定默认 bridge 网关；没有 Docker 时只监听127.0.0.1。安装 Docker 后先 stop 再 start，让工具改绑 bridge 网关。遇到 Docker socket 无访问权限，可以临时指定 `AGENT_TOOLS_HOST` 的桥接地址后在终端运行 `bash dify/run-tools.sh`。
+已安装并启用持久systemd用户服务，在用户登录后自动启动，不依赖当前shell。未启用linger，不承诺无人登录时业务API自动运行。Docker容器使用restart策略自动恢复。业务API监听127.0.0.1:8010，工具绑定Docker桥接地址172.17.0.1:8091，不占用Co-Worker的8000。普通 start/stop/status 可继续管理服务。
 
 ### 3.4 导入工作流并发布
 
@@ -98,11 +97,25 @@ curl http://127.0.0.1:8010/api/v1/orchestration
 python3 scripts/import_dify_workflows.py --session-file .private/dify/console-session.json
 ```
 
-脚本按1.19.0源码中的 Console API 编写：导入、发布、生成应用 Key，逐应用落盘以便恢复；已有已配置应用跳过。控制台会话接口可能随版本变化，且本机未启动 Dify，**此脚本与 DSL 尚未经过真实 Dify 导入验证**，须运行 `config`、控制台导入和工作流测试才算完成发布。导入过程中出现版本确认或依赖错误会停止，不忽略错误。操作结束后删除私有会话文件。
+`scripts/bootstrap_dify_console.py` 已实测完成首次初始化和登录，把会话私有保存，随后上述批量脚本实际导入发布全部11个应用并保存应用密钥。已有已配置应用跳过；导入出现版本确认或依赖错误时停止。`apps.json` 保存应用ID，`app-keys.json` 保存调用密钥。临时控制台会话文件用完删除；需要再操作时可重新执行bootstrap登录脚本。
 
 ## 4. 密钥和媒体
 
 `CO_WORKER_DB_PATH` 默认指向现有 Co-Worker `chat.db`，只读查询配置表，不读取或迁移聊天内容，不改该数据库。显式环境变量 `DASHSCOPE_API_KEY` / `DEEPSEEK_API_KEY` / `ARK_API_KEY` 优先。Dify 模式的网页 `/model/configure` 返回409，供应商凭据不能通过普通业务接口更新。
+
+### 百炼单Key实测（2026-11-09）
+
+| 任务／型号 | 同一百炼Key实测 |
+| --- | --- |
+| DeepSeek `deepseek-v4.1-flash`，五维打分及引文校验 | HTTP200，通过 |
+| 千问 `qwen-flash`，诊断报告结构验证 | HTTP200，通过 |
+| 豆包文本 `doubao-seed-2-1-lite-260915` | HTTP404，`model_not_found` |
+| Seedream `doubao-seedream-5-0-flash-260915` | 百炼生图入口HTTP400，`InvalidParameter`，未接受生成 |
+| Seedance `doubao-seedance-2-0-fast-260128` | 百炼视频入口HTTP400，`InvalidParameter`，未创建任务 |
+
+百炼 `/models` 返回182个型号，包含DeepSeek与千问，不包含doubao／seedream／seedance。因此不能承诺此账号能够用一把百炼Key完成原来三家全部能力，也不把通义生图／通义视频冒充豆包。当前工具服务私有配置启用了 `DEEPSEEK_PROVIDER=bailian` 和 `BAILIAN_DEEPSEEK_MODEL=deepseek-v4.1-flash`，DeepSeek与千问实际共用百炼凭据和接口；Ark仍保留独立Key，媒体关闭。源码默认official，管理员可显式切换。
+
+复测：`PYTHONPATH=backend .venv/bin/python scripts/check_bailian_single_key.py`；可选 `--probe-media` 额外提交一条图片和视频探测（若将来接入成功会产生费用）。模型目录只能说明可列出，不代替真实权限与任务验证。完整结果保存在 `.private/dify/bailian-single-key-check.json`。
 
 媒体默认关闭，需要管理员设置 `MEDIA_ENABLED=true` 以及有权限的 `ARK_IMAGE_MODEL` / `ARK_VIDEO_MODEL`，然后重启工具和8010业务服务。当前已有 Ark 文本模型不能当成视频模型使用。目录中存在模型并不能证明生成权限。
 
@@ -132,8 +145,11 @@ POST `/api/v1/media` 接收 `kind`、`prompt`、`consent:true`、16–64位 `req
 | 错误脱敏、不自动重试、原文校验、会话隔离、媒体去重 | 自动测试通过 |
 | 原有 smoke / 职业来源 / 报告检查 | 通过 |
 | 官方 Compose 与本地覆盖配置解析 | 通过，Compose v5.7.0独立二进制验证；选中16个服务、入口仅绑定127.0.0.1 |
-| Dify Docker实际启动、DSL实际导入、跨容器工具访问 | 待管理员安装Docker后联调 |
+| Dify Docker实际启动、DSL实际导入、跨容器工具访问 | 通过：13个服务、11个应用、本机工具HTTP连接 |
+| 三家独立接口，经真实Dify完整闭环 | 通过，合成DOCX上传→画像→五维→匹配→报告→4轮面试→总结→导出→跨浏览器隔离 |
+| 百炼单Key，DeepSeek＋千问，经真实Dify完整闭环 | 通过，同上全链路，43秒；没有降级旧接口 |
+| 同一百炼Key调用豆包文本／Seedream／Seedance | 未通过，见上表；未生成媒体 |
 
-当前8010和8091两个本机服务已启动，`/orchestration` 如实显示全部工作流尚未配置；此时请求真实聊天返回503，不伪装工作流已可用。
+当前8010业务API和8091工具服务已启用，`/orchestration` 显示11个工作流均已配置。控制台可登录，真实聊天HTTP200。媒体默认仍关闭。主网站的旧8000代理未改动。
 
-检查命令：`make smoke`；部署预检：`python3 scripts/prepare_dify.py doctor`；小额文本及Ark目录实测：`PYTHONPATH=backend .venv/bin/python scripts/check_agents_live.py`（前两项会调用模型计费）。
+检查命令：`make smoke`；部署预检：`python3 scripts/prepare_dify.py doctor`；完整真实Dify闭环：`.venv/bin/python scripts/check_dify_live.py`。真实测试均可能调用模型计费，结果写入`.private/dify/live-check.json`，使用合成资料，不提交测试隐私内容。

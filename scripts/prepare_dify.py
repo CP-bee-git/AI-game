@@ -63,6 +63,9 @@ def prepare():
         current += "SSRF_PROXY_ALLOW_PRIVATE_DOMAINS=host.docker.internal\n"
     if "CODE_EXECUTION_API_KEY=" not in current:
         current += "CODE_EXECUTION_API_KEY=" + secrets.token_hex(32) + "\n"
+    if not any(line.startswith("SANDBOX_API_KEY=") for line in current.splitlines()):
+        execution_key = next(line.split("=", 1)[1] for line in current.splitlines() if line.startswith("CODE_EXECUTION_API_KEY="))
+        current += "SANDBOX_API_KEY=" + execution_key + "\n"
     for name, value in {"CODE_MAX_STRING_LENGTH": "12000000", "HTTP_REQUEST_NODE_MAX_TEXT_SIZE": "12000000"}.items():
         if not any(line.startswith(name + "=") for line in current.splitlines()):
             current += name + "=" + value + "\n"

@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     co_worker_db_path: Path = Path("/home/w-ubuntu/桌面/co_worker/chat.db")
     deepseek_api_key: str = Field(default="", repr=False)
     deepseek_model: str = "deepseek-flash"
+    deepseek_provider: Literal["official", "bailian"] = "official"
+    bailian_deepseek_model: str = "deepseek-v4.1-flash"
     ark_api_key: str = Field(default="", repr=False)
     ark_image_model: str = ""
     ark_video_model: str = ""

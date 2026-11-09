@@ -37,6 +37,9 @@ class AgentTools:
             with sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True) as database:
                 saved = dict(database.execute("SELECT key,value FROM settings WHERE key LIKE 'provider.%'"))
         if provider == "deepseek":
+            if self.settings.deepseek_provider == "bailian":
+                key, base, _model = self.credentials("qwen")
+                return key, base, self.settings.bailian_deepseek_model
             return (self.settings.deepseek_api_key or saved.get("provider.deepseek.api_key", ""),
                     "https://api.deepseek.com/v1", saved.get("provider.deepseek.model") or self.settings.deepseek_model)
         if provider == "ark":
@@ -79,7 +82,7 @@ class AgentTools:
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False, default=str)},
             ],
         }
-        if provider == "qwen":
+        if provider == "qwen" or (provider == "deepseek" and self.settings.deepseek_provider == "bailian"):
             body["enable_thinking"] = False
         else:
             body["thinking"] = {"type": "disabled"}
