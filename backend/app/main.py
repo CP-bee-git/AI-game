@@ -54,6 +54,12 @@ from app.services.resume import initial_resume_blocks
 from app.services.state import SQLiteMap
 from app.services.storage import LocalStorage
 from app.services.session import BrowserSessionMiddleware, allow_configuration_attempt, clear_model_settings, model_settings, save_model_settings
+from app.services.agent_contracts import MediaCreate, ReportContent, Summary
+from app.services.dify import DifyClient
+from app.services.dify_business import analyze as dify_analyze, score_matches
+from app.services.interview import AnswerEvaluation, InterviewPlan
+from app.services.profile import ProfilePayload
+from app.services.session import current_session
 
 settings = get_settings()
 logger = logging.getLogger("careerpilot.api")
@@ -66,7 +72,7 @@ app.add_middleware(
 )
 
 def configure_state(path: Path | None = None) -> None:
-    global _resume_blocks, _profiles, _jobsets, _interviews, _reports, _exports, _match_runs, _consents
+    global _resume_blocks, _profiles, _jobsets, _interviews, _reports, _exports, _match_runs, _consents, _analyses, _media
     state_path = path or settings.state_db_path
     _resume_blocks = SQLiteMap(state_path, "resume_blocks")
     _profiles = SQLiteMap(state_path, "profiles")
@@ -76,12 +82,18 @@ def configure_state(path: Path | None = None) -> None:
     _exports = SQLiteMap(state_path, "exports")
     _match_runs = SQLiteMap(state_path, "match_runs")
     _consents = SQLiteMap(state_path, "consents")
+    _analyses = SQLiteMap(state_path, "analyses")
+    _media = SQLiteMap(state_path, "media")
 
 
 configure_state()
 
 
 def require_qwen_chat() -> None:
+    if settings.ai_backend == "dify":
+        if not DifyClient(settings).configured("chat"):
+            raise HTTPException(status_code=503, detail="请先发布并配置 Dify 工作流")
+        return
     if not model_settings(settings).qwen_chat_configured:
         raise HTTPException(status_code=503, detail="请先输入千问 / 阿里云百炼 API Key 并连接云模型")
 
@@ -105,7 +117,7 @@ async def safe_validation_error(request: Request, exc: RequestValidationError):
 
 @app.exception_handler(CloudModelError)
 async def safe_cloud_error(request: Request, exc: CloudModelError):
-    logger.warning("qwen_cloud_failed error_code=%s", exc.error_code)
+    logger.warning("ai_backend_failed error_code=%s", exc.error_code)
     headers = {"Retry-After": "30"} if exc.error_code == "cloud_rate_limit" else None
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail, "error_code": exc.error_code}, headers=headers)
 
@@ -180,11 +192,16 @@ async def health() -> HealthResponse:
 
 @app.get(f"{settings.api_prefix}/model-config", response_model=ModelConfigResponse)
 async def model_configuration() -> ModelConfigResponse:
+    if settings.ai_backend == "dify":
+        client = DifyClient(settings)
+        return ModelConfigResponse(provider="Dify · 多模型协作", model="DeepSeek 评分 / 千问报告", image_ocr="千问视觉工作流", matching="DeepSeek 多维评分 + 可核对证据", chat_configured=client.configured("chat"), vision_configured=client.configured("ocr"))
     return ModelConfigResponse(**model_config(model_settings(settings)))
 
 
 @app.post(f"{settings.api_prefix}/model/configure", response_model=ModelConfigResponse)
 async def configure_model(payload: ModelConfigureRequest, request: Request) -> ModelConfigResponse:
+    if settings.ai_backend == "dify":
+        raise HTTPException(status_code=409, detail="当前为 Dify 模式，模型凭据由服务端管理员配置；此页面不接收供应商 Key。")
     if not allow_configuration_attempt(request.client.host if request.client else "unknown"):
         raise HTTPException(status_code=429, detail="连接尝试过于频繁，请一分钟后重试", headers={"Retry-After": "60"})
     candidate = settings.model_copy(update={
@@ -205,12 +222,17 @@ async def configure_model(payload: ModelConfigureRequest, request: Request) -> M
 
 @app.delete(f"{settings.api_prefix}/model/configure", response_model=ModelConfigResponse)
 async def disconnect_model() -> ModelConfigResponse:
+    if settings.ai_backend == "dify":
+        raise HTTPException(status_code=409, detail="Dify 服务连接由管理员管理。")
     clear_model_settings()
     return ModelConfigResponse(**model_config(model_settings(settings)))
 
 
 @app.post(f"{settings.api_prefix}/model/ping", response_model=ModelPingResponse)
 async def model_ping() -> ModelPingResponse:
+    if settings.ai_backend == "dify":
+        await DifyClient(settings).run("chat", {"messages": [{"role": "user", "content": "只回复：连接正常"}]}, ChatResponse)
+        return ModelPingResponse(status="ok", provider="Dify", model="千问工作流", models=["千问工作流"])
     require_qwen_chat()
     try:
         models = await QwenCloudProvider(model_settings(settings)).ping()
@@ -229,6 +251,8 @@ async def model_ping() -> ModelPingResponse:
 
 @app.post(f"{settings.api_prefix}/chat", response_model=ChatResponse)
 async def chat(payload: ChatRequest) -> ChatResponse:
+    if settings.ai_backend == "dify":
+        return await DifyClient(settings).run("chat", payload.model_dump(), ChatResponse)
     require_qwen_chat()
     return await QwenCloudProvider(model_settings(settings)).chat_json(
         "你是就业罗盘的求职咨询助手。用户无需上传简历即可与你讨论职业方向、岗位选择、简历表达和面试准备。"
@@ -264,7 +288,21 @@ async def upload_resume(
     resume_id = uuid4()
     destination = storage.save(resume_id, filename, content)
     try:
-        vision_ocr = QwenCloudProvider(model_settings(settings)).vision_ocr if model_settings(settings).qwen_vision_configured else None
+        if settings.ai_backend == "dify":
+            import asyncio
+            import base64
+            async def run_ocr(image: bytes, media_type: str) -> str:
+                with Image.open(BytesIO(image)) as source:
+                    page_image = source.convert("RGB")
+                    page_image.thumbnail((2400, 2400))
+                    output = BytesIO()
+                    page_image.save(output, format="JPEG", quality=88)
+                result = await DifyClient(settings).run("ocr", {"image_base64": base64.b64encode(output.getvalue()).decode(), "media_type": "image/jpeg"})
+                return str(result.get("text", ""))
+            def vision_ocr(image: bytes, media_type: str) -> str:
+                return asyncio.run(run_ocr(image, media_type))
+        else:
+            vision_ocr = QwenCloudProvider(model_settings(settings)).vision_ocr if model_settings(settings).qwen_vision_configured else None
         _resume_blocks[resume_id] = await run_in_threadpool(initial_resume_blocks, destination, file.content_type or "", vision_ocr)
     except CloudModelError:
         storage.delete(destination)
@@ -309,9 +347,14 @@ async def resume_profile(resume_id: UUID) -> ProfileDraft:
         raise HTTPException(status_code=404, detail="Resume not found")
     if not any(block.get("text") and not str(block.get("block_id", "")).startswith("ocr_empty") for block in blocks):
         raise HTTPException(status_code=422, detail="Resume has no extractable text; OCR is required")
-    require_qwen_chat()
+    if settings.ai_backend != "dify":
+        require_qwen_chat()
     try:
-        payload = await extract_profile(resume_id, blocks, QwenCloudProvider(model_settings(settings)))
+        if settings.ai_backend == "dify":
+            extracted = await DifyClient(settings).run("profile", {"blocks": blocks}, ProfilePayload)
+            payload = {"resume_id": str(resume_id), "status": "awaiting_confirmation", **extracted.model_dump()}
+        else:
+            payload = await extract_profile(resume_id, blocks, QwenCloudProvider(model_settings(settings)))
         _profiles[resume_id] = payload
         return ProfileDraft.model_validate(payload)
     except HTTPException:
@@ -343,15 +386,25 @@ async def confirm_resume_profile(resume_id: UUID, request: ProfileConfirmRequest
         "demo_dataset": _profiles.get(resume_id, {}).get("demo_dataset"),
     }
     _profiles[resume_id] = profile
+    _analyses.pop(resume_id, None)
+    for key in list(_match_runs):
+        if key.startswith(f"{resume_id}:"):
+            del _match_runs[key]
     return ProfileDraft.model_validate(profile)
 
 
-def _analysis_for(resume_id: UUID) -> dict:
+async def _analysis_for(resume_id: UUID) -> dict:
     profile = _profiles.get(resume_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="未找到当前浏览器的画像")
     if profile.get("status") != "confirmed":
         raise HTTPException(status_code=409, detail="请先确认画像，再查看星级分析与职业匹配")
+    if settings.ai_backend == "dify" and not _is_china_demo(profile):
+        cached = _analyses.get(resume_id)
+        if cached is None:
+            cached = {"resume_id": str(resume_id), **await dify_analyze(DifyClient(settings), profile, _resume_blocks.get(resume_id, []))}
+            _analyses[resume_id] = cached
+        return cached
     return {
         "resume_id": str(resume_id),
         **profile_analysis(profile, _resume_blocks.get(resume_id, [])),
@@ -362,7 +415,7 @@ def _analysis_for(resume_id: UUID) -> dict:
 
 @app.get(f"{settings.api_prefix}/resumes/{{resume_id}}/analysis")
 async def get_profile_analysis(resume_id: UUID) -> dict:
-    return _analysis_for(resume_id)
+    return await _analysis_for(resume_id)
 
 
 @app.post(f"{settings.api_prefix}/jobsets", response_model=JobSetResponse, status_code=201)
@@ -379,6 +432,9 @@ async def import_jobs(jobset_id: UUID, request: JobImportRequest) -> JobSetRespo
         raise HTTPException(status_code=404, detail="Job set not found")
     jobset["jobs"] = [job.model_dump() for job in request.jobs]
     _jobsets[jobset_id] = jobset
+    for key in list(_match_runs):
+        if key.endswith(f":{jobset_id}"):
+            del _match_runs[key]
     return JobSetResponse(jobset_id=jobset_id, name=jobset["name"], jobs=request.jobs)
 
 
@@ -401,7 +457,11 @@ async def run_matches(request: MatchRunRequest) -> MatchRunResponse:
     if jobset is None:
         raise HTTPException(status_code=404, detail="Job set not found")
     jobs = jobset["jobs"]
-    results = [MatchResult.model_validate(item) for item in match_jobs(profile, jobs)]
+    if settings.ai_backend == "dify" and not _is_china_demo(profile):
+        scored = await score_matches(DifyClient(settings), profile, _resume_blocks.get(request.resume_id, []), jobs)
+    else:
+        scored = match_jobs(profile, jobs)
+    results = [MatchResult.model_validate(item) for item in scored]
     _match_runs[f"{request.resume_id}:{request.jobset_id}"] = [result.model_dump(mode="json") for result in results]
     return MatchRunResponse(resume_id=request.resume_id, jobset_id=request.jobset_id, results=results)
 
@@ -419,10 +479,15 @@ async def create_diagnosis(request: DiagnosisRequest) -> DiagnosticReport:
         raise HTTPException(status_code=404, detail="Job not found")
     previous_run = _match_runs.get(f"{request.resume_id}:{request.jobset_id}", [])
     result = next((item for item in previous_run if item["job_title"] == request.job_title), None)
-    if result is None:
+    if result is None and settings.ai_backend == "dify" and not _is_china_demo(profile):
+        result = (await score_matches(DifyClient(settings), profile, _resume_blocks.get(request.resume_id, []), [job]))[0]
+    elif result is None:
         result = match_jobs(profile, [job])[0]
     report = build_diagnosis(uuid4(), job, result)
-    if model_settings(settings).qwen_chat_configured:
+    if settings.ai_backend == "dify" and not _is_china_demo(profile):
+        generated = await DifyClient(settings).run("report", {"profile": profile, "blocks": _resume_blocks.get(request.resume_id, []), "job": job, "match": result}, ReportContent)
+        report.update(generated.model_dump(), engine="model")
+    elif settings.ai_backend == "legacy" and model_settings(settings).qwen_chat_configured:
         try:
             advice = await generate_coaching(profile, job, result, QwenCloudProvider(model_settings(settings)))
             report["optional_improve"] = advice.optional_improve or report["optional_improve"]
@@ -436,7 +501,7 @@ async def create_diagnosis(request: DiagnosisRequest) -> DiagnosticReport:
     elif not _is_china_demo(profile):
         require_qwen_chat()
     report["notice"] = _source_notice(profile, job)
-    report["profile_analysis"] = profile_analysis(profile, _resume_blocks.get(request.resume_id, []))
+    report["profile_analysis"] = await _analysis_for(request.resume_id)
     _reports[report["report_id"]] = report
     return DiagnosticReport.model_validate(report)
 
@@ -453,7 +518,11 @@ async def create_interview(request: InterviewCreateRequest) -> InterviewSessionR
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     engine = "rules"
-    if model_settings(settings).qwen_chat_configured:
+    if settings.ai_backend == "dify" and not _is_china_demo(profile):
+        plan = await DifyClient(settings).run("questions", {"profile": profile, "job": job}, InterviewPlan)
+        questions = [question.model_dump() for question in plan.questions]
+        engine = "model"
+    elif settings.ai_backend == "legacy" and model_settings(settings).qwen_chat_configured:
         try:
             questions = await generate_questions(profile, job, QwenCloudProvider(model_settings(settings)))
             engine = "model"
@@ -469,7 +538,8 @@ async def create_interview(request: InterviewCreateRequest) -> InterviewSessionR
     session_id = uuid4()
     _interviews[session_id] = {
         "job_title": job["title"],
-        "profile_analysis": profile_analysis(profile, _resume_blocks.get(request.resume_id, [])),
+        "profile_analysis": await _analysis_for(request.resume_id),
+        "ai_backend": settings.ai_backend,
         "notice": _source_notice(profile, job),
         "engine": engine,
         "questions": questions,
@@ -516,7 +586,10 @@ async def answer_interview(session_id: UUID, request: InterviewAnswerRequest) ->
     if session["status"] == "completed":
         raise HTTPException(status_code=409, detail="Interview is already completed")
     question = session["questions"][session["index"]]
-    if session.get("engine") == "model":
+    if session.get("ai_backend") == "dify" and session.get("engine") == "model":
+        evaluation = await DifyClient(settings).run("evaluate", {"answer": request.answer, "question": question}, AnswerEvaluation)
+        score, feedback = evaluation.score, evaluation.feedback
+    elif session.get("engine") == "model":
         require_qwen_chat()
         try:
             evaluation = await evaluate_answer_with_model(request.answer, question, QwenCloudProvider(model_settings(settings)))
@@ -538,7 +611,14 @@ async def answer_interview(session_id: UUID, request: InterviewAnswerRequest) ->
     session["index"] += 1
     if session["index"] >= len(session["questions"]):
         session["status"] = "completed"
-        if session.get("engine") == "model":
+        if session.get("ai_backend") == "dify" and session.get("engine") == "model":
+            try:
+                summary = await DifyClient(settings).run("summary", {"turns": session["turns"], "job_title": session["job_title"]}, Summary)
+                session["summary"] = summary.summary
+            except CloudModelError:
+                session["summary"] = ["回答和评分已保存；复盘报告暂未生成，可以稍后重试。"]
+                session["summary_pending"] = True
+        elif session.get("engine") == "model":
             session["summary"] = ["面试问题和回答反馈由千问云 API 生成，属于求职练习意见，不验证技术正确性或经历真实性。", "建议对照原始项目材料核验回答内容，并由本人决定是否采用修改建议。"]
         else:
             session["summary"] = ["当前为规则演示评分，仅检查关键词、回答长度和数字；不验证技术正确性或经历真实性。", "请优先补充回答中的项目职责和可核验结果，完整语义评价待模型接入后验证。"]
@@ -546,10 +626,22 @@ async def answer_interview(session_id: UUID, request: InterviewAnswerRequest) ->
     return _interview_response(session_id)
 
 
+@app.post(f"{settings.api_prefix}/interviews/{{session_id}}/summary", response_model=InterviewSessionResponse)
+async def retry_interview_summary(session_id: UUID) -> InterviewSessionResponse:
+    session = _interviews.get(session_id)
+    if not session or session.get("ai_backend") != "dify" or session["status"] != "completed":
+        raise HTTPException(status_code=409, detail="此会话没有已完成的 Dify 面试")
+    if session.get("summary_pending"):
+        summary = await DifyClient(settings).run("summary", {"turns": session["turns"], "job_title": session["job_title"]}, Summary)
+        session.update(summary=summary.summary, summary_pending=False)
+        _interviews[session_id] = session
+    return _interview_response(session_id)
+
+
 @app.post(f"{settings.api_prefix}/exports", response_model=ExportArtifactResponse, status_code=201)
 async def create_export(request: ExportRequest) -> ExportArtifactResponse:
     if request.type == "profile":
-        data = _analysis_for(request.resource_id)
+        data = await _analysis_for(request.resource_id)
     elif request.type == "diagnosis":
         report = _reports.get(request.resource_id)
         data = DiagnosticReport.model_validate(report).model_dump(mode="json") if report else None
@@ -574,6 +666,37 @@ async def get_export(export_id: UUID) -> ExportArtifactResponse:
     if artifact is None:
         raise HTTPException(status_code=404, detail="Export not found")
     return ExportArtifactResponse.model_validate(artifact)
+
+
+@app.get(f"{settings.api_prefix}/orchestration")
+async def orchestration_status() -> dict:
+    client = DifyClient(settings)
+    return {
+        "backend": settings.ai_backend,
+        "workflows": {operation: client.configured(operation) for operation in ("profile", "analysis", "match", "report", "questions", "evaluate", "summary", "chat", "ocr", "media_create", "media_status")},
+        "agents": {"scoring": "DeepSeek", "review": "DeepSeek", "report": "千问", "interview": "千问出题 / DeepSeek 评分 / 千问总结", "media": "豆包 Seedream / Seedance"},
+        "media_enabled": settings.media_enabled,
+    }
+
+
+@app.post(f"{settings.api_prefix}/media", status_code=201)
+async def create_media(request: MediaCreate) -> dict:
+    if settings.ai_backend != "dify" or not settings.media_enabled:
+        raise HTTPException(status_code=503, detail="Dify 媒体功能尚未启用。")
+    payload = {**request.model_dump(), "owner": current_session.get()}
+    result = await DifyClient(settings).run("media_create", payload)
+    if not result.get("task_id") or result.get("request_id") != request.request_id:
+        raise HTTPException(status_code=502, detail="媒体工作流返回无效任务")
+    _media[result["task_id"]] = {"request_id": request.request_id}
+    return result
+
+
+@app.get(f"{settings.api_prefix}/media/{{task_id}}")
+async def get_media(task_id: UUID) -> dict:
+    record = _media.get(task_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="当前会话没有此媒体任务")
+    return await DifyClient(settings).run("media_status", {**record, "owner": current_session.get()})
 
 
 @app.get(f"{settings.api_prefix}/demo/china")
@@ -609,4 +732,3 @@ async def start_china_demo() -> dict:
         task=TaskStatus(task_id=uuid4(), status="succeeded", progress=100, message="合成DOCX已实际解析；画像为人工预置样例，不是模型返回。"),
     )
     return {"notice": data["notice"], "resume": resume, "profile": profile, "jobset": jobset}
-

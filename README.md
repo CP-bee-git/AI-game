@@ -4,6 +4,10 @@
 
 [在线演示](https://7e950176.r39.cpolar.top) · [公开源码](https://github.com/CP-bee-git/AI-game) · [开发者说明](docs/DEVELOPMENT.md)
 
+## Dify 升级后端
+
+新增 Dify Workflow 适配和本机 Agent 工具服务：DeepSeek 负责多维评分与复核，千问负责结构化、报告、面试出题和复盘，豆包负责可选图片／视频任务。已提供11个工作流文件、55条带来源的职业知识文件，以及完整后端契约测试。当前默认仍走原有云接口；Dify 容器安装和真实工作流导入尚待本机管理员完成，未宣称已经上线。结构、部署步骤和逐项验收状态见 [Dify 后端说明](docs/DIFY.md)。
+
 ![CareerPilot 网站界面](docs/preview.png)
 
 <details><summary>查看生成报告样式（合成样例）</summary>

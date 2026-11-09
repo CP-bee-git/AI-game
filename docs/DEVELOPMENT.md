@@ -2,6 +2,8 @@
 
 技术栈：Next.js 16 / React 19、FastAPI / Python 3.12+、SQLite；Node.js 24、pnpm 11。单实例、单 API 进程。
 
+Dify 多模型升级的模块分工、部署与实际验收状态见 [DIFY.md](DIFY.md)。设置 `AI_BACKEND=dify` 后，业务接口只经 Dify 工作流调用本机 Agent 工具；未配置时返回明确错误，旧接口模式通过 `AI_BACKEND=legacy` 保留。
+
 页面样式集中在 `frontend/app/globals.css`：画布 `#F7F7F8`、正文与辅助文字统一为黑色 `#000000`，蓝紫 `#59558F` 用于按钮、选中状态和图表。标题 400、区块标题 500，通过字号、字重和留白区分信息层级；数字随正文使用比例字形，只有 API Key 等代码字段使用等宽字体。
 
 网页字体通过 `next/font/local` 随站点提供，字形源自 IBM Plex Sans SC，保留 400 / 500 两种字重，界面小字库预加载，GB2312 补充字库按需加载；缺字回退到系统中文字体。子集重命名为 CareerPilot Sans / UI，来源、版本与 OFL 许可见 `frontend/app/fonts/`，无需访问外部字体服务。桌面使用侧栏与双栏工作区，900px 以下导航移至顶部，620px 以下内容单列；步骤读取真实会话状态，长说明默认收起。

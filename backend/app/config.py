@@ -21,6 +21,19 @@ class Settings(BaseSettings):
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     allowed_upload_extensions: str = ".pdf,.docx,.png,.jpg,.jpeg"
 
+    ai_backend: Literal["legacy", "dify"] = "legacy"
+    dify_base_url: str = "http://127.0.0.1:8088/v1"
+    dify_app_keys_file: Path = Path(".private/dify/app-keys.json")
+    dify_timeout_seconds: float = Field(default=180, ge=1, le=600)
+    agent_tools_token: str = Field(default="", repr=False)
+    co_worker_db_path: Path = Path("/home/w-ubuntu/桌面/co_worker/chat.db")
+    deepseek_api_key: str = Field(default="", repr=False)
+    deepseek_model: str = "deepseek-flash"
+    ark_api_key: str = Field(default="", repr=False)
+    ark_image_model: str = ""
+    ark_video_model: str = ""
+    media_enabled: bool = False
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", env_ignore_empty=True, extra="ignore")
 
     @field_validator("qwen_api_key")
@@ -52,4 +65,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
