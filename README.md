@@ -1,98 +1,85 @@
 # CareerPilot · 就业罗盘
 
-整理简历、对照岗位要求、练习面试并下载记录。模型功能使用阿里云百炼 / 千问 API，不需要部署模型。
+从一份简历开始：核对经历、比较岗位、修改表达，再练习面试。
 
-[在线演示](https://7e950176.r39.cpolar.top) · [公开源码](https://github.com/CP-bee-git/AI-game) · [开发者说明](docs/DEVELOPMENT.md)
+[项目源码](https://github.com/CP-bee-git/AI-game) · [部署与模型配置](docs/DIFY.md) · [前端与接口交接](docs/FRONTEND.md) · [职业数据来源](docs/CHINA_CAREER_SOURCES.md)
 
-## Dify 升级后端
+![就业罗盘工作台](docs/preview.png)
 
-本机 Dify 1.19.0 已安装，11个工作流已导入发布，控制台为 `http://127.0.0.1:8088`，新业务 API 为 `http://127.0.0.1:8010`。DeepSeek 多维评分和千问报告已使用同一把百炼 Key 跑通真实合成简历闭环；豆包文本／Seedream／Seedance 在本次百炼测试中未通过，仍保留独立 Ark 接口、媒体默认关闭。旧网站入口仍走原有接口。结构、启动方法和验收记录见 [Dify 后端说明](docs/DIFY.md)。
+## 已交付的工作台
 
-![CareerPilot 网站界面](docs/preview.png)
+- **整理简历**：PDF、DOCX、PNG、JPG，最大10MB；核对技能、教育、项目与城市偏好后确认。可重新修改信息，旧分析随之失效。
+- **评分与岗位比较**：DeepSeek按证据评分，职业目录召回后重排；每条建议可查看简历原文及来源。评分不代表录用概率。
+- **诊断报告**：千问写作、DeepSeek评审；文档阅读区与岗位关键词、投递检查分栏展示，支持HTML／JSON导出。
+- **面试练习**：千问出题、DeepSeek评价、千问复盘；当前问题与回答并排，历史回答按时间线保留，失败可重试。
+- **职业咨询**：无需上传简历。工作流模式由管理员配置连接，网页不接收供应商Key。
+- **职业影像**：图片／视频界面、单独同意、任务去重与状态查询已实现；当前豆包账号实测受到额度／权限限制，功能关闭，不提交生成。
 
-<details><summary>查看生成报告样式（合成样例）</summary>
+<details><summary>查看文档式诊断报告（合成示例）</summary>
 
-![画像星图与职业报告](docs/report-preview.png)
+![简历诊断报告](docs/report-preview.png)
 
 </details>
 
-## 启动网站
+## 本机访问
 
-环境：Linux、Python 3.12+、Node.js 24+、pnpm 11。
+| 页面 | 地址 |
+| --- | --- |
+| 工作台 | <http://127.0.0.1:3000> |
+| Dify控制台 | <http://127.0.0.1:8088> |
+| 业务接口 | <http://127.0.0.1:8010/docs> |
 
-```bash
-git clone https://github.com/CP-bee-git/AI-game.git
-cd AI-game
-./start.sh
-```
+本机已安装Dify 1.19.0，11个工作流发布。DeepSeek `deepseek-v4.1-flash` 与千问 `qwen-flash` 共用百炼API Key；豆包仍需要独立Ark凭据。供应商Key和Dify应用Key只保存在服务端私有配置，均不提交Git。
 
-启动器自动安装依赖、构建网页并在后台运行 API 和网站。打开 **http://127.0.0.1:3000**，展开「千问连接设置」，填写阿里云百炼的 **Model Studio API Key**，验证成功即可使用；不是阿里云 AccessKey ID / Secret。
+管理员账号和凭据在本机 `.private/dify/admin.json`。请勿把文件、数据库或运行日志上传到公开仓库。
 
-- 默认中国大陆节点、`qwen-plus`；也可选择新加坡节点，Key 与地域必须对应。
-- 图片和扫描 PDF 使用同一 Key 调用 `qwen-vl-plus`；可选文字 PDF / DOCX 在应用中解析。
-- 页面填写的 Key 仅保存在服务端临时内存，按浏览器会话隔离，不进入浏览器持久存储、数据库或 Git；会话最长 8 小时，服务重启后需重新连接。
-- 没有 Key 也能点击「合成样例」体验完整操作；样例画像、诊断和面试明确为预置/规则演示，不冒充云模型结果。
-- 真实简历的画像、诊断和面试需要有效 Key、相应模型权限与可用云额度；云 API 按阿里云实际计费。
+## 启动与停止
 
-若希望服务器预设 Key，可将 `.env.example` 复制为私有 `.env`，只填 `DASHSCOPE_API_KEY`。此默认 Key 会供该网站访客使用，不建议在开放演示中预设；通常直接在页面连接更合适。
-
-## 用 cpolar 免费发布
+环境：Linux、Python 3.12+、Node.js 24+、pnpm 11、Docker、Compose 2.35+。
 
 ```bash
-./scripts/install-cpolar.sh
+./start.sh --setup-only             # 安装项目依赖
+./start.sh --dify                   # 构建并安装/启动工作台与后端用户服务
+bash dify/services.sh status
+bash dify/services.sh stop
 ```
 
-在 [cpolar 官网免费注册](https://dashboard.cpolar.com/signup)，登录控制台复制 authtoken。创建私有配置并填写 `CPOLAR_AUTHTOKEN`：
+新机器还需按 [Dify说明](docs/DIFY.md) 安装容器、初始化并导入工作流；应用密钥不存在时不会伪装已连接。已有本机Dify密钥文件时，`./start.sh` 自动选择工作流模式。服务在用户登录后自动恢复；未启用无人登录的linger。
 
-```bash
-umask 077
-cp .env.example .env  # 已有 .env 时不要重复覆盖
-# 编辑 .env，只填写自己的 CPOLAR_AUTHTOKEN
-./start.sh --public
-```
+旧版直连模式可执行 `./start.sh --legacy`，需要空闲的3000和8000端口。它保留千问Key会话配置，适合兼容回归；当前交付使用Dify入口。Co-Worker的8000端口不会被新工作台占用。
 
-启动器通过 cpolar 免费随机域名只发布网站的 3000 端口，打印 HTTPS 地址；网页 API 经同域代理访问，8000 不直接对公网开放。API Key 与 cpolar authtoken 是两种不同凭证。
+如需公网演示，可运行 `./scripts/install-cpolar.sh`，私有配置中填入 `CPOLAR_AUTHTOKEN` 后执行 `./start.sh --dify --public`。免费域名随隧道变化，不能把旧地址视为永久在线。公开部署前应配置访问控制，并使用合成或脱敏资料。
 
-免费域名不是固定域名，可能变化；应用电脑和 cpolar 进程需要持续联网运行。未提供 authtoken 时，程序会明确提示，网站仍可本机使用，不会声称公网发布成功。免费账号和套餐说明见 [cpolar 官方页面](https://www.cpolar.com/pricing)。
+## 使用顺序
 
-## 使用流程
+1. 先点击「载入示例」了解流程，示例数据均为虚构，按规则运行，不消耗模型调用。
+2. 阅读数据处理说明，上传脱敏简历；扫描件会通过千问视觉识别。
+3. 整理并核对资料，查看五维分析和10个职业方向。
+4. 导入1–20个目标岗位，生成诊断、修改简历、练习面试。
+5. 下载报告。HTML可在浏览器打印为PDF；JSON保留结构化结果。
 
-只想聊天时，连接千问后直接使用「直接聊天」输入框，无需上传简历。可连续追问或清空对话，刷新后聊天记录会消失。
+原始文件保存在本机。相关文本、扫描图像或回答会进入云模型；Dify运行日志可能保留输入输出。网页清空聊天不等于删除服务端日志。当前为单实例浏览器会话隔离，没有跨设备账户与自动保留期清理；完整说明见网站 `/privacy`。
 
-1. 连接云 API，或载入完全虚构的演示样例。
-2. 阅读数据处理说明，上传 PDF / DOCX / PNG / JPG（最大 10 MB）。
-3. 生成并确认画像，查看五维星级与职业库匹配的 **10 个具体职业方向**；也可自行导入 1–20 条目标岗位。
-4. 查看匹配分数、匹配依据和技能缺口，针对岗位生成诊断。
-5. 完成多轮文本模拟面试，下载画像、诊断和面试的 HTML / JSON 报告；HTML 含星图，可打印为 PDF。
+## 设计与框架
 
-岗位分数使用可解释的技能、学历、城市规则，**不是语义向量相似度或录用概率**。系统不验证学历或材料真伪，不代投简历；反馈需人工判断。
-
-职业方向采用 **中国职业分类的 55 个精选条目**，名称、代码和官方大中小类已逐条通过[技能人才评价工作网](https://www.osta.org.cn/career)核对。页面保留官方名称，并补充国内常见岗位称呼，例如“大数据工程技术人员”对应“数据开发工程师”等。工作方向说明、技能关键词和排序由项目维护；这是职业探索，不是国家职业标准、资格认定或实时招聘库。画像星级表示资料与原文证据完整度。来源与使用边界见[核对说明](docs/CHINA_CAREER_SOURCES.md)。
-
-## 维护与验证
-
-## 界面设计
-
-工作台界面采用编辑部风格：标题使用思源宋体子集（Noto Serif CJK SC），正文为 IBM Plex Sans SC 子集，字号收敛为五级阶梯（12 / 14.5 / 17 / 22 / 32），全站无渐变文字。配色三角色：墨色 `#1b1c2a`、辅助灰 `#5d6072`、点缀靛紫 `#4f46c8`，琥珀 `#e8a33d` 只用于星级。右栏为 sticky 上下文面板，报告以文档卡片呈现（段首衬线大写、纸感阴影）。动效统一为时长令牌（160/240/420ms）与单一缓动，只保留渐入、悬停上浮、插画缓漂三类，兼容 `prefers-reduced-motion`。样式集中在 `frontend/app/globals.css`。
-
-```bash
-make stop          # 停止网站、API 和本项目 cpolar 隧道
-make setup         # 只安装依赖
-make smoke         # 云错误分类、业务闭环、职业来源和报告检查
-make check         # Python 编译、前端类型检查与生产构建
-make e2e           # 桌面/手机与配置界面浏览器测试
-python3 scripts/manage.py status
-```
-
-真实 Key 调用失败时按页面错误码检查地域、额度与权限；开发者可运行 `.venv/bin/python backend/scripts/smoke_flow.py --real` 做一次小额真实 JSON 诊断。未提供真实 Key 时，不会把模拟通过视为账户已验通。
-
-首次运行浏览器测试需 `pnpm --dir frontend exec playwright install chromium`。运行日志在 `.runtime/logs/`；上传文件与业务结果在 `backend/storage/`，均不提交 Git。会话隔离只适合单实例演示；数据库和上传文件持久化，但重启后会话索引会清除，需重新上传；尚无自动删除/保留期管理，公开站点请使用合成或脱敏资料。
+桌面采用步骤导航、主工作区、可折叠记录栏。标题使用本地Noto Serif CJK SC子集，正文使用IBM Plex Sans SC子集；暖白、墨绿配色，禁用发光文字和循环装饰动画。900px以下上下排列，窄屏报告与面试改为单列。`prefers-reduced-motion` 开启时关闭全部动画。
 
 ```text
-backend/app/       FastAPI、云 API、简历处理与 SQLite 业务状态
-frontend/app/      Next.js 中文求职工作台与数据处理说明
-scripts/           一键启动、停止与 cpolar 安装
-.env.example       可选的私有配置模板
+frontend/app/        工作台编排、报告/面试/媒体/资料核对组件、隐私说明
+backend/app/         会话隔离、存储、Dify业务适配、Agent工具
+dify/workflows/      11个可导入工作流
+dify/knowledge/      55条带来源职业条目
+scripts/            部署、导入和验证工具
+docs/               当前截图、部署说明、接口交接、项目介绍PPT
 ```
 
-演示数据集中在 `backend/app/data/china_demo.json`：候选人、学校、公司、岗位和结果数字均为虚构。能力类别参考教育部公开教学标准，原始链接及访问日期保留在数据的 `sources` 中；不打包第三方全文、不代表真实招聘。
+## 验证
+
+```bash
+make smoke                         # 模拟云调用、完整业务、职业来源、报告及Dify契约
+make check                         # Python、类型、生产构建和差异检查
+make e2e                           # 浏览器回归；隔离后端8020，不调用真实付费模型
+.venv/bin/python scripts/check_dify_live.py  # 真实Dify合成资料全流程，会消耗云额度
+```
+
+浏览器首次使用需 `pnpm --dir frontend exec playwright install chromium`。实际验收和媒体受限情况见 [最终交付说明](docs/DELIVERY.md)。

@@ -17,8 +17,21 @@ if [[ "${1:-}" == '--setup-only' ]]; then
   exit 0
 fi
 
-if [[ ! -f frontend/.next/BUILD_ID ]] || find frontend/app frontend/next.config.ts frontend/package.json -type f -newer frontend/.next/BUILD_ID -print -quit | grep -q .; then
+launch_mode=legacy
+if [[ -f .private/dify/app-keys.json ]]; then launch_mode=dify; fi
+if [[ "${1:-}" == '--dify' ]]; then launch_mode=dify; shift; fi
+if [[ "${1:-}" == '--legacy' ]]; then launch_mode=legacy; shift; fi
+backend_url=http://127.0.0.1:8000
+if [[ "$launch_mode" == dify ]]; then backend_url=http://127.0.0.1:8010; fi
+if [[ ! -f frontend/.next/BUILD_ID ]] || [[ "$(cat frontend/.next/BUILD_BACKEND_URL 2>/dev/null || true)" != "$backend_url" ]] || find frontend/app frontend/next.config.ts frontend/package.json -type f -newer frontend/.next/BUILD_ID -print -quit | grep -q .; then
   echo '构建网站…'
-  pnpm --dir frontend build
+  API_INTERNAL_URL="$backend_url" pnpm --dir frontend build
+  printf '%s\n' "$backend_url" > frontend/.next/BUILD_BACKEND_URL
+fi
+if [[ "$launch_mode" == dify ]]; then
+  bash dify/services.sh install
+  echo '工作台：http://127.0.0.1:3000；Dify：http://127.0.0.1:8088'
+  if [[ "${1:-}" == '--public' ]]; then exec .venv/bin/python scripts/manage.py public; fi
+  exit 0
 fi
 exec .venv/bin/python scripts/manage.py start "$@"

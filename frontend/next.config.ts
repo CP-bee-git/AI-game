@@ -7,14 +7,14 @@ const repositoryRoot = dirname(frontendDir);
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  distDir: process.env.CAREERPILOT_TEST_BUILD === "1" ? ".next-test" : ".next",
   outputFileTracingRoot: repositoryRoot,
   turbopack: { root: repositoryRoot },
   experimental: { proxyTimeout: 300_000 },
   async rewrites() {
-    const backend = (process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+    const backend = (process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8010").replace(/\/$/, "");
     return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
   },
 };
 
 export default nextConfig;
-

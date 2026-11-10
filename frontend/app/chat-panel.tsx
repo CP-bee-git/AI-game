@@ -5,20 +5,22 @@ import { ArrowRight, CircleAlert } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
 
-export default function ChatPanel({ apiBase, connected, ready, onConnect }: {
+export default function ChatPanel({ apiBase, connected, ready, onConnect, managed = false }: {
   apiBase: string;
   connected: boolean;
   ready: boolean;
   onConnect: () => void;
+  managed?: boolean;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const log = useRef<HTMLDivElement>(null);
+  const following = useRef(true);
 
   useEffect(() => {
-    if (log.current) log.current.scrollTop = log.current.scrollHeight;
+    if (log.current && following.current) log.current.scrollTop = log.current.scrollHeight;
   }, [messages]);
 
   async function send(event: FormEvent<HTMLFormElement>) {
@@ -43,6 +45,7 @@ export default function ChatPanel({ apiBase, connected, ready, onConnect }: {
       if (!response.ok) throw new Error(typeof data?.detail === "string" ? data.detail : "暂时无法回复，请稍后重试。");
       if (typeof data?.reply !== "string" || !data.reply.trim()) throw new Error("模型没有返回可用内容，请重试。");
       const answer: Message = { role: "assistant", content: data.reply };
+      following.current = true;
       setMessages((previous) => [...previous, question, answer].slice(-100));
       setDraft("");
     } catch (failure) {
@@ -56,14 +59,14 @@ export default function ChatPanel({ apiBase, connected, ready, onConnect }: {
     <section className="chat-section" id="chat" aria-labelledby="chat-title" aria-busy={sending}>
       <div className="section-heading"><h2 id="chat-title">直接聊天</h2><span className="stage-tag">无需上传简历</span></div>
       <p className="section-description">职业方向、岗位选择、面试准备，都可以直接问。</p>
-      {!connected && <div className="chat-connection"><p>先连接千问，再发送问题。聊天不需要提交简历。</p><button className="secondary-button compact" type="button" onClick={onConnect}>连接千问<ArrowRight size={14} /></button></div>}
-      {messages.length > 0 && <div className="chat-messages" ref={log} role="log" aria-label="聊天记录" aria-live="polite" aria-relevant="additions text">
+      {!connected && <div className="chat-connection"><p>{managed ? "咨询工作流尚未配置，请查看服务状态或联系管理员。" : "先连接千问，再发送问题。聊天不需要提交简历。"}</p><button className="secondary-button compact" type="button" onClick={onConnect}>{managed ? "查看服务状态" : "连接千问"}<ArrowRight size={14} /></button></div>}
+      {messages.length > 0 && <div className="chat-messages" ref={log} onScroll={(event) => { const element = event.currentTarget; following.current = element.scrollHeight - element.scrollTop - element.clientHeight < 70; }} role="log" aria-label="聊天记录" aria-live="polite" aria-relevant="additions text">
         {messages.map((message, index) => <article className={`chat-message ${message.role}`} key={index}><span>{message.role === "user" ? "你" : "千问"}</span><p>{message.content}</p></article>)}
       </div>}
       <form onSubmit={send}>
         <label className="field-label" htmlFor="chat-message">想聊什么</label>
         <textarea className="job-input chat-input" id="chat-message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="例如：没有实习经历，面试时该怎么介绍自己？" maxLength={4000} rows={3} disabled={!ready || sending} aria-describedby="chat-privacy" required />
-        <p className="chat-privacy" id="chat-privacy">发送的内容会交给阿里云处理；对话仅保留在本页，刷新或清空后移除。请避免填写电话、证件号等信息。<a href="/privacy">聊天数据说明</a></p>
+        <p className="chat-privacy" id="chat-privacy">{managed ? "问题和最近的对话经工作流交给云模型处理；清空仅移除本页记录，服务端运行日志可能保留输入与输出。" : "问题和最近的对话会交给阿里云处理；清空会移除本页记录。"}请避免填写电话、证件号等信息。<a href="/privacy">聊天数据说明</a></p>
         <div className="chat-actions"><button className="primary-button compact" type="submit" disabled={!ready || !connected || sending || !draft.trim()}>{sending ? "正在回复…" : "发送"}<ArrowRight size={15} /></button>{messages.length > 0 && <button className="secondary-button compact" type="button" disabled={sending} onClick={() => { setMessages([]); setDraft(""); setError(""); }}>清空对话</button>}{sending && <span className="chat-pending" role="status">千问正在回复，请稍候。</span>}</div>
       </form>
       {error && <div className="notice error" role="alert"><CircleAlert size={16} /><span>{error}</span></div>}

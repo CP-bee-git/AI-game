@@ -3,10 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, CheckCircle2, CircleAlert, Download, FileUp, LockKeyhole, ScanSearch, ShieldCheck, Unplug } from "lucide-react";
 import ChatPanel from "./chat-panel";
+import WorkspaceContext from "./workspace-context";
+import ReportView from "./report-view";
+import InterviewRoom from "./interview-room";
+import MediaStudio from "./media-studio";
+import ProfileReview from "./profile-review";
+import type { DiagnosticReport, InterviewSession, Orchestration } from "./workspace-types";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
 type ModelConfig = {
+  backend?: "legacy" | "dify";
   model: string;
   provider: string;
   image_ocr: string;
@@ -72,27 +79,6 @@ type MatchResult = {
   score_breakdown: Record<string, number>;
 };
 
-type DiagnosticReport = {
-  report_id: string;
-  job_title: string;
-  company: string;
-  strengths: string[];
-  must_fix: string[];
-  optional_improve: string[];
-  ats_keywords: string[];
-  checklist: string[];
-};
-
-type InterviewSession = {
-  session_id: string;
-  job_title: string;
-  status: "active" | "completed";
-  current_question?: string;
-  turns: Array<{ question: string; answer?: string; score?: number; feedback?: string }>;
-  overall_score?: number;
-  summary: string[];
-};
-
 const steps = ["上传简历", "核对信息", "比较岗位", "修改简历", "练习面试"];
 const regions = { china: "中国内地 · 北京", singapore: "国际 · 新加坡" } as const;
 
@@ -108,6 +94,9 @@ function openCloudSettings() {
     panel.open = true;
     panel.scrollIntoView({ block: "start" });
     document.getElementById("api-key")?.focus({ preventScroll: true });
+  } else {
+    panel?.scrollIntoView({ block: "start" });
+    panel?.focus({ preventScroll: true });
   }
 }
 
@@ -120,6 +109,9 @@ function StarRating({ score, label }: { score: number; label: string }) {
 
 export default function Home() {
   const [model, setModel] = useState<ModelConfig | null>(null);
+  const [service, setService] = useState<Orchestration | null>(null);
+  const [serviceError, setServiceError] = useState("");
+  const [retryingSummary, setRetryingSummary] = useState(false);
   const [apiState, setApiState] = useState<"checking" | "online" | "offline">("checking");
   const [uploading, setUploading] = useState(false);
   const [selectedFilename, setSelectedFilename] = useState("");
@@ -171,6 +163,7 @@ export default function Home() {
         const configuration: ModelConfig = await config.json();
         if (controller.signal.aborted) return;
         setModel(configuration);
+        if (configuration.backend === "dify") void refreshService(controller.signal);
         if (configuration.region && !configFieldsEdited.current.region) setRegion(configuration.region);
         if (configuration.chat_configured && !configFieldsEdited.current.model) setModelName(configuration.model);
         const [health, demo] = await Promise.all([
@@ -190,6 +183,17 @@ export default function Home() {
       analysisRequest.current?.abort();
     };
   }, []);
+
+  async function refreshService(signal?: AbortSignal) {
+    try {
+      const response = await fetch(`${apiBase}/orchestration`, { signal, credentials: "same-origin", cache: "no-store" });
+      if (!response.ok) throw new Error("服务状态暂时无法读取，请稍后刷新。");
+      const data: Orchestration = await response.json();
+      if (!signal?.aborted) { setService(data); setServiceError(""); }
+    } catch (failure) {
+      if (!signal?.aborted) setServiceError(failure instanceof Error ? failure.message : "无法读取服务状态。");
+    }
+  }
 
   async function refreshModel() {
     const response = await fetch(`${apiBase}/model-config`, { cache: "no-store", credentials: "same-origin" });
@@ -400,7 +404,7 @@ export default function Home() {
     if (!profile) return;
     const jobs = jobLines.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
       const [title = "未命名岗位", company = "未填写", location = "不限", skills = ""] = line.split("|").map((part) => part.trim());
-      return { title, company, location, required_skills: skills.split(",").map((skill) => skill.trim()).filter(Boolean), raw_text: line };
+      return { title, company, location, required_skills: skills.split(/[,，、]/).map((skill) => skill.trim()).filter(Boolean), raw_text: line };
     });
     if (!jobs.length || jobs.length > 20) {
       setError("请按每行一条输入 1–20 个岗位");
@@ -453,6 +457,7 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(errorMessage(data.detail, "诊断生成失败"));
       setReport(data);
+      requestAnimationFrame(() => document.getElementById("report")?.scrollIntoView({ block: "start" }));
     } catch (reportError) {
       setError(reportError instanceof Error ? reportError.message : "诊断生成失败");
     } finally {
@@ -470,6 +475,7 @@ export default function Home() {
       if (!response.ok) throw new Error(errorMessage(data.detail, "面试创建失败"));
       setInterview(data);
       setInterviewAnswer("");
+      requestAnimationFrame(() => document.getElementById("interview")?.scrollIntoView({ block: "start" }));
     } catch (interviewError) {
       setError(interviewError instanceof Error ? interviewError.message : "面试创建失败");
     } finally {
@@ -495,27 +501,54 @@ export default function Home() {
   }
 
   const activeStep = interview ? 4 : report ? 3 : profile?.status === "confirmed" ? 2 : upload ? 1 : 0;
+  const managed = model?.backend === "dify";
+  const modelScoring = managed && !demoActive;
+  const pendingTask = uploading ? "正在解析文件" : generatingProfile ? "千问正在整理简历" : analyzing ? "正在评分并核对证据" : matching ? "正在比较岗位要求" : reporting ? "正在撰写并复核报告" : startingInterview ? "正在准备面试题" : answering ? "正在评估本次回答" : retryingSummary ? "正在生成面试复盘" : "";
+
+  useEffect(() => {
+    if (error) document.getElementById("workspace-error")?.scrollIntoView({ block: "center" });
+  }, [error]);
+
+  async function retrySummary() {
+    if (!interview || retryingSummary) return;
+    setRetryingSummary(true);
+    setError("");
+    try {
+      const response = await fetch(`${apiBase}/interviews/${interview.session_id}/summary`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(errorMessage(data.detail, "复盘生成失败，请稍后重试。"));
+      setInterview(data);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "复盘生成失败。");
+    } finally { setRetryingSummary(false); }
+  }
 
   return (
     <div className="app-layout">
-      <a className="skip-link" href="#workspace">跳到求职工作台</a>
+      <a className="skip-link" href="#main-content">跳到求职工作台</a>
       <aside className="app-rail" aria-label="工作台导航">
         <a className="brand" href="/" aria-label="CareerPilot 首页"><span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 17V6.5A2.5 2.5 0 0 1 8.5 4H18v10.5a2.5 2.5 0 0 1-2.5 2.5H6Z" stroke="currentColor" strokeWidth="1.7"/><path d="M3 8v12h12M10 9h4M10 12h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><span>就业罗盘<small>CareerPilot</small></span></a>
         <p className="rail-label">操作步骤</p>
-        <nav className="rail-nav" aria-label="求职流程">{steps.map((step,index)=><a className={`rail-link ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} href={index === 4 && profile?.status !== "confirmed" ? "#chat" : index < 2 || profile?.status !== "confirmed" ? "#workspace" : index === 2 ? "#analysis" : "#jobs"} key={step}><span className="rail-link-index">{String(index + 1).padStart(2,"0")}</span><span>{step}</span>{index < activeStep && <Check size={14} className="rail-complete" />}</a>)}</nav>
-        <div className="rail-footer"><button className="rail-settings" type="button" onClick={openCloudSettings}><LockKeyhole size={15} />模型设置</button><a href="/privacy"><ShieldCheck size={15} />数据与隐私</a><span className="rail-edition">演示版 · 当前浏览器会话</span></div>
+        <nav className="rail-nav" aria-label="求职流程">{steps.map((step,index)=><a className={`rail-link ${index === activeStep ? "active" : ""} ${index < activeStep ? "complete" : ""}`} aria-current={index === activeStep ? "step" : undefined} href={index < 2 ? "#workspace" : index === 2 ? (analysis ? "#jobs" : "#workspace") : index === 3 ? (report ? "#report" : "#jobs") : interview ? "#interview" : "#chat"} key={step}><span className="rail-link-index">{String(index + 1).padStart(2,"0")}</span><span>{step}</span>{index < activeStep && <Check size={14} className="rail-complete" />}</a>)}</nav>
+        <div className="rail-footer"><button className="rail-settings" type="button" onClick={openCloudSettings}><LockKeyhole size={15} />{managed ? "服务状态" : "模型设置"}</button><a href="/privacy"><ShieldCheck size={15} />数据与隐私</a><a href="#media">职业影像</a><span className="rail-edition">{managed ? "工作流版" : "直连版"} · 当前浏览器会话</span></div>
       </aside>
-      <main className="shell">
+      <main className="shell" id="main-content">
 
-      <div className="workspace-head"><span>求职工作台 <span className="breadcrumb-separator">/</span> 简历分析</span><div className="topbar-meta" aria-live="polite"><span className={`status-dot ${apiState === "online" ? model?.chat_configured ? "online" : "checking" : apiState}`} /><span>{apiState === "online" ? model?.chat_configured ? "模型已连接" : "模型未连接" : apiState === "offline" ? "网站暂时不可用" : "正在连接"}</span></div></div>
+      <div className="workspace-head"><span>求职工作台 <span className="breadcrumb-separator">/</span> 简历分析</span><div className="topbar-meta" aria-live="polite"><span className={`status-dot ${apiState === "online" ? model?.chat_configured ? "online" : "checking" : apiState}`} /><span>{apiState === "online" ? model?.chat_configured ? (managed ? "服务已配置" : "模型已连接") : "模型未连接" : apiState === "offline" ? "网站暂时不可用" : "正在连接"}</span></div></div>
+      <div className="workspace-frame"><div className="workspace-content">
       <section className="workspace-intro" aria-labelledby="workspace-title">
-        <div className="intro-copy"><p className="page-label">求职工作台</p><h1 id="workspace-title">下一步，从了解自己开始。</h1><p>读懂简历，连接职业方向，准备下一次机会。</p><div className="intro-links"><a className="text-link" href="#chat">直接聊天 <ArrowRight size={14} /></a><a className="text-link" href="#demo">先看一份示例 <ArrowRight size={14} /></a></div></div>
-        <div className="intro-art" aria-hidden="true"><img src="/illustrations/hero-constellation.svg" alt="" width="380" height="280" /></div>
+        <div className="intro-copy"><p className="page-label">CAREERPILOT / 求职手记</p><h1 id="workspace-title">从一份简历，找到下一步。</h1><p>整理经历，对照岗位，把准备落在具体的事情上。</p><div className="intro-links"><a className="text-link" href="#workspace">开始整理 <ArrowRight size={14} /></a><a className="text-link" href="#chat">直接聊天 <ArrowRight size={14} /></a><a className="text-link" href="#demo">先看示例 <ArrowRight size={14} /></a></div></div>
         <div className="session-progress" aria-label={`当前第 ${activeStep + 1} 步，共 5 步：${steps[activeStep]}`}><span className="session-progress-label">本次进度</span><div className="session-progress-count"><strong>{String(activeStep + 1).padStart(2,"0")}</strong><span>/ 05</span></div><div className="session-progress-bars" aria-hidden="true">{steps.map((step,index)=><span className={index <= activeStep ? "reached" : ""} key={step} />)}</div><span className="session-progress-step">{steps[activeStep]}</span></div>
       </section>
 
 
-      <details className="cloud-panel" id="cloud-config">
+      {managed ? <section className="managed-service cloud-panel" id="cloud-config" aria-labelledby="service-title" tabIndex={-1}>
+        <div className="section-heading"><div><p className="page-label">服务连接</p><h2 id="service-title">评分与写作，各有分工</h2></div><span className="stage-tag">{model.chat_configured ? "由工作流处理" : "待管理员配置"}</span></div>
+        <div className="agent-roster"><div><strong>DeepSeek</strong><span>证据评分 · 岗位比较 · 复核</span></div><div><strong>千问</strong><span>简历整理 · 报告 · 面试复盘</span></div><div><strong>豆包</strong><span>{service?.media_enabled ? "职业影像 · 按需生成" : "职业影像 · 尚未启用"}</span></div></div>
+        <p className="service-note">连接由管理员维护，无需填写 API Key。{service ? `${Object.values(service.workflows).filter(Boolean).length} 项工作流已配置；实际处理结果以任务返回为准。` : "正在读取工作流状态。"}</p>
+        <button className="text-button" type="button" onClick={() => { void refreshService(); void refreshModel().catch(() => setServiceError("连接状态读取失败，请稍后重试。")); }}>刷新服务状态</button>
+        {serviceError && <p role="status" className="muted">{serviceError}</p>}
+      </section> : <details className="cloud-panel" id="cloud-config">
         <summary className="connection-summary"><span className="connection-name"><LockKeyhole size={15} />千问连接设置</span><span className={`connection-badge ${model?.chat_configured ? "connected" : ""}`}>{model?.chat_configured ? "连接已验证" : "等待连接"}</span><span className="connection-summary-note">{model?.chat_configured ? model.model : "聊天或分析简历前，请先填入 API Key"}</span><span className="connection-toggle" aria-hidden="true" /></summary>
         <div className="connection-body">
           <div className="cloud-intro"><h2 id="cloud-title">连接千问</h2><p>选择密钥所属的区域，填好后点验证。没有密钥，也可以先看下面的示例。</p><p className="connection-note">服务重启或会话到期后，需要重新连接。</p></div>
@@ -530,11 +563,11 @@ export default function Home() {
           {configNotice && <div className="notice success" role="status"><CheckCircle2 size={16} /><span>{configNotice}</span></div>}
         </form>
         </div>
-      </details>
+      </details>}
+      {pendingTask && <p className="task-progress" role="status">{pendingTask}。请稍候，完成后会显示结果；等待期间请不要重复提交。</p>}
 
-      <ChatPanel apiBase={apiBase} connected={Boolean(model?.chat_configured)} ready={model !== null} onConnect={openCloudSettings} />
 
-      <section className="workspace-grid" id="workspace">
+      <section className="workspace-grid" id="workspace" aria-label="简历整理">
         <div className="upload-section">
           <div className="section-heading">
             <div><h2>上传简历</h2></div>
@@ -547,47 +580,21 @@ export default function Home() {
               <span className="drop-hint">PDF / Word / 图片，10 MB 以内</span>
               <input id="resume" name="resume" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg" onChange={(event) => setSelectedFilename(event.target.files?.[0]?.name ?? "")} required aria-label="选择简历文件" />
             </label>
-            <label className="privacy-consent"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span>上传前请阅读<a href="/privacy">数据处理说明</a>。图片识别、画像整理和面试反馈会用到阿里云。请先去掉电话、证件号码等非必要信息。</span></label>
+            <label className="privacy-consent"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span>上传前请阅读<a href="/privacy">数据处理说明</a>。相关文本或扫描图像将经云模型处理；工作流日志可能保存输入和输出。请先去掉电话、证件号码等非必要信息。</span></label>
             <button className="primary-button" disabled={apiState !== "online" || uploading || !privacyAccepted || !selectedFilename} type="submit">
               {uploading ? "上传中..." : "上传并解析"}<ArrowRight size={17} />
             </button>
           </form>
-          {error && <div className="notice error" role="alert"><CircleAlert size={16} /><span>{error}</span></div>}
+          {error && <div className="notice error" role="alert" id="workspace-error"><CircleAlert size={16} /><span>{error}</span></div>}
           {upload && <div className="notice success" role="status"><CheckCircle2 size={16} /><span><strong>{upload.filename}</strong> 已接收。{upload.task?.message}</span></div>}
           {upload && !profile && <button className="secondary-button" disabled={generatingProfile} onClick={generateProfile} type="button">{generatingProfile ? "正在整理..." : "整理简历信息"}</button>}
-          {profile && <div className="profile-preview"><div className="profile-preview-head"><strong>简历信息{profile.status === "confirmed" ? "" : "（待核对）"}</strong><span>{profile.status === "confirmed" ? "已确认" : "请先核对"}</span></div><label className="field-label" htmlFor="skills">技能（可修改，逗号分隔）</label><input className="text-input" id="skills" value={skillText} onChange={(event) => setSkillText(event.target.value)} disabled={profile.status === "confirmed"} /><div className="skill-list">{profile.skills.length ? profile.skills.slice(0, 12).map((skill, index) => <span key={`${skill.name}-${index}`}>{skill.normalized_name ?? skill.name ?? "未命名技能"}</span>) : <small>没有识别到明确技能，可以在上面补充。</small>}</div>{profile.warnings.length > 0 && <p className="profile-warning">{profile.warnings[0]}</p>}{profile.status !== "confirmed" && <button className="secondary-button" disabled={confirmingProfile} onClick={confirmProfile} type="button">{confirmingProfile ? "保存中..." : "确认信息，查看匹配"}<ArrowRight size={15} /></button>}</div>}
+          {profile && <div className="profile-preview"><div className="profile-preview-head"><strong>简历信息{profile.status === "confirmed" ? "" : "（待核对）"}</strong><span>{profile.status === "confirmed" ? "已确认" : "请先核对"}</span></div><label className="field-label" htmlFor="skills">技能（可修改，逗号分隔）</label><input className="text-input" id="skills" value={skillText} onChange={(event) => setSkillText(event.target.value)} disabled={profile.status === "confirmed"} /><div className="skill-list">{profile.skills.length ? profile.skills.slice(0, 12).map((skill, index) => <span key={`${skill.name}-${index}`}>{skill.normalized_name ?? skill.name ?? "未命名技能"}</span>) : <small>没有识别到明确技能，可以在上面补充。</small>}</div>{profile.warnings.length > 0 && <p className="profile-warning">{profile.warnings[0]}</p>}<ProfileReview profile={profile} disabled={profile.status === "confirmed" || confirmingProfile} onChange={(key, value) => setProfile((previous) => previous ? { ...previous, [key]: value } : previous)} />{profile.status !== "confirmed" && <button className="secondary-button" disabled={confirmingProfile} onClick={confirmProfile} type="button">{confirmingProfile ? "保存中..." : "确认信息，查看匹配"}<ArrowRight size={15} /></button>}{profile.status === "confirmed" && <button className="text-button" type="button" onClick={() => { setProfile({ ...profile, status: "awaiting_confirmation" }); resetAnalysis(); setMatches([]); setReport(null); setInterview(null); }}>修改已确认信息</button>}</div>}
           <div className="workspace-tip"><p>先核对提取的信息，再查看匹配结果。只补充确实做过、能说明的经历。</p></div>
         </div>
 
-        <aside className="info-panel">
-          <div className="session-record">
-          <div className="panel-title"><ScanSearch size={17} /><span>本次记录</span></div>
-          <div className="info-list">
-            <div><span>简历信息</span><strong>{profile?.status === "confirmed" ? "已确认" : profile ? "待确认" : upload ? "可生成" : "还没上传"}</strong></div>
-            <div><span>职业参考</span><strong>{analysis ? `${analysis.careers.results.length} 个职业` : "确认信息后显示"}</strong></div>
-            <div><span>目标岗位</span><strong>{jobCount} / 20</strong></div>
-            <div><span>面试状态</span><strong>{interview?.status === "completed" ? "已完成" : interview ? "进行中" : "未开始"}</strong></div>
-          </div>
-          </div>
-          <section className="demo-panel" id="demo" aria-label="中国数据演示">
-            <div>
-              <p className="page-label">示例</p>
-              <h2>先用示例看看结果</h2>
-              <p>示例里有一份简历和 10 条岗位，直接载入即可，不需要 API Key。</p>
-              <p className="demo-disclosure">简历、公司和岗位均为虚构；示例画像预先写好，匹配和反馈按规则生成。</p>
-              {demoInfo && <details className="demo-sources"><summary>示例数据从哪里来</summary><p>{demoInfo.notice}</p><div className="source-links">{demoInfo.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.title} ↗</a>)}</div></details>}
-            </div>
-            <div className="demo-actions">
-              <button className="primary-button compact" disabled={apiState !== "online" || loadingDemo || uploading} onClick={loadDemo} type="button">{loadingDemo ? "加载中..." : "载入示例"}<ArrowRight size={16} /></button>
-              <a className="secondary-button compact" href={`${apiBase}/demo/china/resume`} download>下载示例简历</a>
-            </div>
-          </section>
-
-          <details className="model-card"><summary>模型与计算方式</summary>
-            {model ? <div className="model-details"><strong>{model.model}</strong><span>{model.provider}</span><small>文字处理：{model.chat_configured ? "已连接" : "未连接"}</small><small>图片识别：{model.image_ocr}</small><small>岗位分数按技能、学历和城市计算。</small></div> : <p className="muted">正在读取设置</p>}
-          </details>
-        </aside>
       </section>
+
+      <ChatPanel apiBase={apiBase} connected={Boolean(model?.chat_configured)} ready={model !== null} onConnect={openCloudSettings} managed={managed} />
 
       {profile?.status === "confirmed" && <section className="analysis-section" id="analysis" aria-labelledby="analysis-title" aria-busy={analyzing}>
         <div className="section-heading"><div><h2 id="analysis-title">简历资料与职业参考</h2></div><span className="stage-tag">根据你确认的信息</span></div>
@@ -595,7 +602,7 @@ export default function Home() {
         {analysisError && <div className="analysis-retry"><div className="notice error" role="alert"><CircleAlert size={16} /><span>{analysisError}</span></div><button className="secondary-button compact" type="button" onClick={() => upload && loadAnalysis(upload.resume_id)} disabled={analyzing}>重新加载分析</button></div>}
         {analysis && <>
           <div className="profile-analysis">
-            <div className="analysis-heading"><h3>简历资料检查</h3><span>按资料完整度记星</span></div>
+            <div className="analysis-heading"><h3>简历资料检查</h3><span>{modelScoring ? "DeepSeek 评分 · 已复核" : "规则示例 · 资料完整度"}</span></div>
             <div className="dimension-grid">{analysis.dimensions.map((dimension) => <article className="dimension" key={dimension.name}>
               <div className="dimension-head"><h4>{dimension.name}</h4><StarRating score={dimension.score} label={dimension.name} /></div>
               <p>{dimension.note}</p>
@@ -605,7 +612,7 @@ export default function Home() {
             {upload && <div className="action-row"><button className="secondary-button compact" disabled={exporting} type="button" onClick={() => exportReport("profile", upload.resume_id, "html")}><Download size={15} />下载简历分析报告</button><button className="secondary-button compact" disabled={exporting} type="button" onClick={() => exportReport("profile", upload.resume_id, "json")}>导出分析数据 JSON</button></div>}
           </div>
           <div className="career-section">
-            <div className="analysis-heading"><div><h3>10 个职业参考</h3><p>采用中国职业分类，按你填写的技能排序，可逐项查看对应依据。</p></div><span className="stage-tag">{analysis.careers.results.length} 个方向</span></div>
+            <div className="analysis-heading"><div><h3>10 个职业参考</h3><p>{modelScoring ? "从职业目录召回 10 个方向，再按技能、学历和偏好重排。" : "采用中国职业分类，按你填写的技能排序，可逐项查看对应依据。"}</p></div><span className="stage-tag">{analysis.careers.results.length} 个方向</span></div>
             <div className="career-list">{analysis.careers.results.map((career, index) => <article className="career-row" key={career.code}>
               <span className="career-rank">{String(index + 1).padStart(2, "0")}</span>
               <div className="career-content"><div className="career-title"><h4>{career.title}</h4><span>{career.category} · 职业代码 {career.code}</span><span>常见岗位称呼：{career.typical_jobs.join("、")}</span></div><p className="career-reason">{career.reason}</p><div className="career-skills"><p><b>对应技能</b>{career.matched_skills.join("、") || "目前没有对应技能"}</p><p><b>可补充核对</b>{career.skill_gaps.join("、") || "本项目所列关键词均有对应"}</p></div><details className="career-source"><summary>职业说明与原始资料</summary><p>{career.description}</p><p>官方分类：{career.official_classification.join(" / ")}</p><p>场景说明、岗位称呼与技能关键词由本项目整理；不作为官方任职条件。</p><a href={career.source_url} target="_blank" rel="noreferrer">{career.source_title} · 查看名称与代码 ↗</a></details></div>
@@ -623,44 +630,23 @@ export default function Home() {
         <p className="field-help">{jobsetId ? "岗位已准备好，可直接开始匹配。也可输入新清单替换：" : "每行一条："}岗位名称 | 公司 | 城市 | 必需技能（逗号分隔）。</p>
         <textarea className="job-input" aria-label="岗位清单" value={jobLines} onChange={(event) => setJobLines(event.target.value)} placeholder="数据分析师 | 示例公司 | 上海 | Python, SQL\n产品运营 | 示例科技 | 杭州 | 用户研究, Excel" rows={5} />
         <div className="action-row"><button className="primary-button compact" disabled={importingJobs} onClick={importJobs} type="button">{importingJobs ? "导入中..." : "导入岗位"}<ArrowRight size={16} /></button>{jobsetId && <button className="secondary-button compact" disabled={matching} onClick={runMatches} type="button">{matching ? "计算中..." : "开始匹配"}<ScanSearch size={15} /></button>}</div>
-        {matches.length > 0 && <div className="match-list"><div className="match-list-head"><strong>匹配结果</strong><span>按已填条件排序</span></div>{matches.map((match, index) => <div className="match-row" key={`${match.job_title}-${index}`}><div className="match-rank">{String(index + 1).padStart(2, "0")}</div><div className="match-main"><strong>{match.job_title}</strong><span>{match.company} · {match.location}</span><small>技能 {Math.round(match.score_breakdown.skill_coverage ?? 0)} · 学历 {Math.round(match.score_breakdown.education_match ?? 0)} · 偏好 {Math.round(match.score_breakdown.preference_fit ?? 0)}{match.score_breakdown.semantic_similarity === undefined ? " · 规则匹配" : ` · 语义 ${Math.round(match.score_breakdown.semantic_similarity)}`}</small><small>匹配技能：{match.matched_skills.join("、") || "暂无"}</small><small>{match.skill_gaps.length ? `尚未写明的技能：${match.skill_gaps.join(", ")}` : "岗位列出的技能均有对应"}</small>{match.hard_fail_reasons.map((reason) => <small className="constraint-warning" key={reason}>{reason}</small>)}{match.evidence && match.evidence.length > 0 && <details className="match-evidence"><summary>查看匹配依据</summary>{match.evidence.map((item) => <p key={item}>{item}</p>)}</details>}<div className="match-actions"><button type="button" disabled={reporting} onClick={() => createDiagnosis(match.job_title)}>{reporting ? "生成中..." : "诊断"}</button><button type="button" disabled={startingInterview} onClick={() => startInterview(match.job_title)}>{startingInterview ? "准备中…" : "面试"}</button></div></div><div className={`match-score ${match.eligible ? "eligible" : "risk"}`}>{Math.round(match.total_score)}<small>{match.eligible ? "对应分" : "条件待核对"}</small></div></div>)}</div>}
-        {report && <div className="report-panel">
-          <div className="match-list-head"><strong>{report.job_title} · 简历诊断</strong><span>{report.company}</span></div>
-          <div className="report-columns">
-            <div><b>优势</b>{report.strengths.map((item) => <p key={item}>{item}</p>)}</div>
-            <div><b>需要核对</b>{report.must_fix.length ? report.must_fix.map((item) => <p key={item}>{item}</p>) : <p>未发现明确缺口</p>}</div>
-            <div><b>岗位关键词</b><p>{report.ats_keywords.join("、") || "暂无"}</p></div>
-          </div>
-          {report.optional_improve.length > 0 && <div className="report-notes"><b>可以这样修改</b>{report.optional_improve.map((item) => <p key={item}>{item}</p>)}</div>}
-          {report.checklist.length > 0 && <div className="report-checklist"><b>投递前检查</b><ul>{report.checklist.map((item) => <li key={item}><CheckCircle2 size={13} />{item}</li>)}</ul></div>}
-          <div className="action-row">
-            <button className="secondary-button compact" disabled={exporting} onClick={() => exportReport("diagnosis", report.report_id, "html")} type="button">下载诊断报告 HTML</button>
-            <button className="secondary-button compact" disabled={exporting} onClick={() => exportReport("diagnosis", report.report_id, "json")} type="button">导出 JSON</button>
-          </div>
-        </div>}
-        {interview && <div className="interview-panel">
-          <div className="match-list-head"><strong>{interview.job_title} · 模拟面试</strong><span>{interview.status === "completed" ? `平均评分 ${interview.overall_score ?? "-"}/5` : `第 ${interview.turns.length + 1} 题`}</span></div>
-          {interview.turns.length > 0 && <div className="interview-turns">{interview.turns.map((turn, index) => <div className="interview-turn" key={index}>
-            <div><strong>第 {index + 1} 题</strong><span>{turn.score ?? "-"} / 5</span></div>
-            <p>{turn.question}</p><p className="turn-answer">{turn.answer}</p><p className="turn-feedback">反馈：{turn.feedback ?? "暂无反馈"}</p>
-          </div>)}</div>}
-          {interview.status === "active" ? <>
-            <p className="interview-question">{interview.current_question}</p>
-            <label className="field-label" htmlFor="interview-answer">你的回答</label><textarea className="job-input" id="interview-answer" value={interviewAnswer} onChange={(event) => setInterviewAnswer(event.target.value)} placeholder="输入你的回答..." rows={4} />
-            <button className="primary-button compact" disabled={answering || !interviewAnswer.trim()} onClick={answerCurrentQuestion} type="button">{answering ? "评分中..." : "提交回答"}<ArrowRight size={16} /></button>
-          </> : <>
-            <div className="interview-summary">{interview.summary.map((item) => <p key={item}>{item}</p>)}</div>
-            <div className="action-row">
-              <button className="secondary-button compact" disabled={exporting} onClick={() => exportReport("interview", interview.session_id, "html")} type="button">下载面试反馈 HTML</button>
-              <button className="secondary-button compact" disabled={exporting} onClick={() => exportReport("interview", interview.session_id, "json")} type="button">导出 JSON</button>
-            </div>
-          </>}
-        </div>}
+        {matches.length > 0 && <div className="match-list"><div className="match-list-head"><strong>匹配结果</strong><span>按已填条件排序</span></div>{matches.map((match, index) => <div className="match-row" key={`${match.job_title}-${index}`}><div className="match-rank">{String(index + 1).padStart(2, "0")}</div><div className="match-main"><strong>{match.job_title}</strong><span>{match.company} · {match.location}</span><small>技能 {Math.round(match.score_breakdown.skill_coverage ?? 0)} · 学历 {Math.round(match.score_breakdown.education_match ?? 0)} · 偏好 {Math.round(match.score_breakdown.preference_fit ?? 0)}{match.score_breakdown.semantic_similarity === undefined ? (modelScoring ? " · DeepSeek 评分" : " · 规则匹配") : ` · 语义 ${Math.round(match.score_breakdown.semantic_similarity)}`}</small><small>匹配技能：{match.matched_skills.join("、") || "暂无"}</small><small>{match.skill_gaps.length ? `尚未写明的技能：${match.skill_gaps.join(", ")}` : "岗位列出的技能均有对应"}</small>{match.hard_fail_reasons.map((reason) => <small className="constraint-warning" key={reason}>{reason}</small>)}{match.evidence && match.evidence.length > 0 && <details className="match-evidence"><summary>查看匹配依据</summary>{match.evidence.map((item) => <p key={item}>{item}</p>)}</details>}<div className="match-actions"><button type="button" disabled={reporting} onClick={() => createDiagnosis(match.job_title)}>{reporting ? "生成中..." : "诊断"}</button><button type="button" disabled={startingInterview} onClick={() => startInterview(match.job_title)}>{startingInterview ? "准备中…" : "面试"}</button></div></div><div className={`match-score ${match.eligible ? "eligible" : "risk"}`}>{Math.round(match.total_score)}<small>{match.eligible ? "对应分" : "条件待核对"}</small></div></div>)}</div>}
       </section>}
+
+      {report && <ReportView report={report} exporting={exporting} onExport={(format) => { void exportReport("diagnosis", report.report_id, format); }} />}
+      {interview && <InterviewRoom interview={interview} answer={interviewAnswer} answering={answering} exporting={exporting} retrying={retryingSummary} onAnswer={setInterviewAnswer} onSubmit={() => { void answerCurrentQuestion(); }} onRetry={() => { void retrySummary(); }} onExport={(format) => { void exportReport("interview", interview.session_id, format); }} />}
+      <MediaStudio apiBase={apiBase} service={service} />
+      </div>
+      <WorkspaceContext>
+        <section className="session-record" aria-label="求职进度"><div className="panel-title"><ScanSearch size={17} /><span>本次记录</span></div><dl className="record-list"><div><dt>简历信息</dt><dd>{profile?.status === "confirmed" ? "已确认" : profile ? "待确认" : upload ? "可生成" : "还没上传"}</dd></div><div><dt>职业参考</dt><dd>{analysis ? `${analysis.careers.results.length} 个职业` : "确认后显示"}</dd></div><div><dt>目标岗位</dt><dd>{jobCount} / 20</dd></div><div><dt>面试状态</dt><dd>{interview?.status === "completed" ? "已完成" : interview ? "进行中" : "未开始"}</dd></div></dl></section>
+        {(report || interview || analysis) && <nav className="document-links" aria-label="本次文档"><h3>本次文档</h3>{analysis && <a href="#analysis">简历分析 <ArrowRight size={14} /></a>}{report && <a href="#report">{report.job_title} · 诊断 <ArrowRight size={14} /></a>}{interview && <a href="#interview">面试记录 <ArrowRight size={14} /></a>}</nav>}
+        <section className="demo-panel" id="demo" aria-label="中国数据演示"><div><p className="page-label">示例</p><h2>先用示例看看结果</h2><p>一份简历，10 条岗位。直接载入，不需要提供个人资料。</p><p className="demo-disclosure">简历、公司和岗位均为虚构；示例画像预先写好，匹配和反馈按规则生成，不调用模型。</p>{demoInfo && <details className="demo-sources"><summary>示例数据从哪里来</summary><p>{demoInfo.notice}</p><div className="source-links">{demoInfo.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.title} ↗</a>)}</div></details>}</div><div className="demo-actions"><button className="primary-button compact" disabled={apiState !== "online" || loadingDemo || uploading} onClick={loadDemo} type="button">{loadingDemo ? "加载中…" : "载入示例"}<ArrowRight size={16} /></button><a className="secondary-button compact" href={`${apiBase}/demo/china/resume`} download>下载示例简历</a></div></section>
+        <details className="model-card"><summary>模型与计算方式</summary>{model ? <div className="model-details"><strong>{model.model}</strong><span>{model.provider}</span><small>文字处理：{model.chat_configured ? "已配置" : "未配置"}</small><small>图片识别：{model.image_ocr}</small><small>{model.matching}</small><small>评分仅供核对资料，不代表录用概率。</small></div> : <p className="muted">正在读取设置</p>}</details>
+      </WorkspaceContext>
+      </div>
 
       <footer><a className="brand footer-brand" href="/"><span>就业罗盘 <small>CareerPilot</small></span></a><span>简历整理、岗位比较与面试练习</span><a href="/privacy">隐私与数据处理说明 <ArrowRight size={13} /></a></footer>
       </main>
     </div>
   );
 }
-

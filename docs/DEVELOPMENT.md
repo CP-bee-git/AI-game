@@ -4,22 +4,22 @@
 
 Dify 多模型升级的模块分工、部署与实际验收状态见 [DIFY.md](DIFY.md)。设置 `AI_BACKEND=dify` 后，业务接口只经 Dify 工作流调用本机 Agent 工具；未配置时返回明确错误，旧接口模式通过 `AI_BACKEND=legacy` 保留。
 
-页面样式集中在 `frontend/app/globals.css`：画布 `#F7F7F8`、正文与辅助文字统一为黑色 `#000000`，蓝紫 `#59558F` 用于按钮、选中状态和图表。标题 400、区块标题 500，通过字号、字重和留白区分信息层级；数字随正文使用比例字形，只有 API Key 等代码字段使用等宽字体。
+页面基础样式在 `frontend/app/globals.css`，最终工作台规范在 `frontend/app/workspace.css`：暖白画布、墨色正文、墨绿强调，主要文字14.5px、辅助文字12px、标题22/30px。衬线仅用于标题，数字保持Sans与等宽数字特性。组件和接口职责见 [FRONTEND.md](FRONTEND.md)。
 
-网页字体通过 `next/font/local` 随站点提供，字形源自 IBM Plex Sans SC，保留 400 / 500 两种字重，界面小字库预加载，GB2312 补充字库按需加载；缺字回退到系统中文字体。子集重命名为 CareerPilot Sans / UI，来源、版本与 OFL 许可见 `frontend/app/fonts/`，无需访问外部字体服务。桌面使用侧栏与双栏工作区，900px 以下导航移至顶部，620px 以下内容单列；步骤读取真实会话状态，长说明默认收起。
+网页字体通过 `next/font/local` 随站点提供，正文IBM Plex Sans SC，标题Noto Serif CJK SC，均保留400/500两种字重；许可与来源各自保存在 `frontend/app/fonts/`。桌面步骤栏、主工作区、可折叠上下文栏，900px以下变为上下排列，620px以下报告与面试单列。动效只在内容出现和用户操作时发生，减弱动效下全部关闭。
 
 ## 启动与发布
 
 ```bash
 ./start.sh --setup-only      # 安装依赖
-./start.sh                   # 构建并后台启动 http://127.0.0.1:3000
+./start.sh --dify            # 已配置本机Dify时，构建并启动3000/8010/8091
 ./start.sh --public          # 使用私有 .env 中 CPOLAR_AUTHTOKEN 开启免费隧道
 make stop                   # 停止本项目进程
 ```
 
-网页展开「千问连接设置」填写**百炼通用 API Key**，默认 `qwen-plus`。中国内地/新加坡的 Key 与地域必须一致；AccessKey ID、账号密码、Coding/Token 专属 Key 不能用于通用接口。Key 只留在当前浏览器对应的服务端内存，8 小时会话、重启清除；不写入业务数据库。
+工作流模式由管理员维护服务端凭据，网页展示DeepSeek、千问和豆包的当前分工，不接收供应商Key。旧版可用 `./start.sh --legacy`，再在「千问连接设置」填写百炼通用Key；该模式的临时Key只保存在浏览器会话对应的服务器内存，不写入业务数据库。
 
-连接后即可使用「直接聊天」，无需上传或确认简历。对话仅保留在页面内存，刷新或清空后移除；每次调用携带最多 10 轮上下文、总计 24,000 字符，不自动附带简历或岗位数据。
+连接后可直接聊天，无需简历。每次携带最多10轮上下文、24000字符，不自动附带简历或岗位。网页清空仅移除本页记录，Dify日志可能保留输入输出，不承诺服务端同时删除。
 
 可选服务器默认值：复制 `.env.example` 为私有 `.env`，填写 `DASHSCOPE_API_KEY`、`QWEN_REGION`。公开演示建议默认 Key 留空，让用户在页面连接。
 

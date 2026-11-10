@@ -10,6 +10,7 @@ public:
 	./start.sh --public
 
 stop:
+	@if [ -f .private/dify/systemd/careerpilot-web.service ]; then bash dify/services.sh stop; fi
 	python3 scripts/manage.py stop
 
 smoke:

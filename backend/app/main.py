@@ -194,7 +194,7 @@ async def health() -> HealthResponse:
 async def model_configuration() -> ModelConfigResponse:
     if settings.ai_backend == "dify":
         client = DifyClient(settings)
-        return ModelConfigResponse(provider="Dify · 多模型协作", model="DeepSeek 评分 / 千问报告", image_ocr="千问视觉工作流", matching="DeepSeek 多维评分 + 可核对证据", chat_configured=client.configured("chat"), vision_configured=client.configured("ocr"))
+        return ModelConfigResponse(backend="dify", provider="Dify · 多模型协作", model="DeepSeek 评分 / 千问报告", image_ocr="千问视觉工作流", matching="DeepSeek 多维评分 + 可核对证据", chat_configured=client.configured("chat"), vision_configured=client.configured("ocr"))
     return ModelConfigResponse(**model_config(model_settings(settings)))
 
 
@@ -566,6 +566,7 @@ def _interview_response(session_id: UUID) -> InterviewSessionResponse:
         turns=turns,
         overall_score=round(sum(scores) / len(scores), 2) if scores else None,
         summary=session["summary"],
+        summary_pending=session.get("summary_pending", False),
         notice=session.get("notice"),
         engine=session.get("engine", "rules"),
     )
@@ -676,6 +677,7 @@ async def orchestration_status() -> dict:
         "workflows": {operation: client.configured(operation) for operation in ("profile", "analysis", "match", "report", "questions", "evaluate", "summary", "chat", "ocr", "media_create", "media_status")},
         "agents": {"scoring": "DeepSeek", "review": "DeepSeek", "report": "千问", "interview": "千问出题 / DeepSeek 评分 / 千问总结", "media": "豆包 Seedream / Seedance"},
         "media_enabled": settings.media_enabled,
+        "media_capabilities": {"image": settings.media_enabled and bool(settings.ark_image_model), "video": settings.media_enabled and bool(settings.ark_video_model)},
     }
 
 
@@ -688,7 +690,7 @@ async def create_media(request: MediaCreate) -> dict:
     if not result.get("task_id") or result.get("request_id") != request.request_id:
         raise HTTPException(status_code=502, detail="媒体工作流返回无效任务")
     _media[result["task_id"]] = {"request_id": request.request_id}
-    return result
+    return {key: result.get(key) for key in ("task_id", "request_id", "kind", "status", "urls")}
 
 
 @app.get(f"{settings.api_prefix}/media/{{task_id}}")
@@ -696,7 +698,8 @@ async def get_media(task_id: UUID) -> dict:
     record = _media.get(task_id)
     if not record:
         raise HTTPException(status_code=404, detail="当前会话没有此媒体任务")
-    return await DifyClient(settings).run("media_status", {**record, "owner": current_session.get()})
+    result = await DifyClient(settings).run("media_status", {**record, "owner": current_session.get()})
+    return {key: result.get(key) for key in ("task_id", "request_id", "kind", "status", "urls")}
 
 
 @app.get(f"{settings.api_prefix}/demo/china")

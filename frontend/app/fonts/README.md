@@ -10,6 +10,6 @@ The UI pair contains the interface characters and is preloaded. The GB2312 pair 
 
 ## CareerPilot Serif
 
-Subset of Noto Serif CJK SC (Regular 400 / Medium 500), released under the SIL Open Font License 1.1; see `OFL.txt`. Source: https://github.com/notofonts/noto-cjk
+Subset of Noto Serif CJK SC (Regular 400 / Medium 500), released under the SIL Open Font License 1.1; see `OFL-Noto.txt`. Source: https://github.com/notofonts/noto-cjk
 
 Coverage is limited to the Chinese characters and punctuation actually used by the app UI; other glyphs fall back to system serif fonts. Used for page and section headings via `--font-career-serif`; preloading is disabled.

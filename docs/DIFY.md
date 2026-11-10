@@ -150,6 +150,10 @@ POST `/api/v1/media` 接收 `kind`、`prompt`、`consent:true`、16–64位 `req
 | 百炼单Key，DeepSeek＋千问，经真实Dify完整闭环 | 通过，同上全链路，43秒；没有降级旧接口 |
 | 同一百炼Key调用豆包文本／Seedream／Seedance | 未通过，见上表；未生成媒体 |
 
-当前8010业务API和8091工具服务已启用，`/orchestration` 显示11个工作流均已配置。控制台可登录，真实聊天HTTP200。媒体默认仍关闭。主网站的旧8000代理未改动。
+2026-11-10更新：3000工作台已接8010，生产前端、业务API、Agent工具均由systemd用户服务启用。`/orchestration` 返回11个工作流状态和分类型媒体能力。前端在Dify模式不显示Key表单，支持可折叠工作记录、资料核对、文档式报告、面试复盘重试。旧直连模式仍可显式选择，默认工作台不使用Co-Worker的8000端口。
+
+豆包独立Ark通道也完成了实测：`doubao-seedream-5-0-flash-260915` 图片返回HTTP429／`SetLimitExceeded`，`doubao-seedance-1-0-pro-fast-251015` 视频返回HTTP403／`AccessDenied`，均未接受任务。不是百炼单Key问题的替代成功结果。媒体已恢复关闭，保留模型ID便于管理员修正额度／权限后开启，前端不会提交关闭状态的任务。
 
 检查命令：`make smoke`；部署预检：`python3 scripts/prepare_dify.py doctor`；完整真实Dify闭环：`.venv/bin/python scripts/check_dify_live.py`。真实测试均可能调用模型计费，结果写入`.private/dify/live-check.json`，使用合成资料，不提交测试隐私内容。
+
+最终工作台结构与页面接口见 `FRONTEND.md`，当前验收与清理结果见 `DELIVERY.md`。生产网页3000与浏览器回归3005／8020隔离，测试使用`.next-test`，不覆盖生产构建。

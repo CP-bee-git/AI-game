@@ -1,15 +1,15 @@
 :root {
-  --ink: #1b1c2a;
+  --ink: #262923;
   --text: var(--ink);
-  --muted: #5d6072;
-  --line: #e7e6f0;
+  --muted: #62665d;
+  --line: #dedfd6;
   --paper: #ffffff;
-  --surface: #f7f6fc;
-  --canvas: #f4f3fa;
-  --accent: #4f46c8;
-  --accent-dark: #3b34a3;
-  --accent-soft: #eeedfb;
-  --accent-bright: #7c6ff0;
+  --surface: #f2f3ed;
+  --canvas: #f7f7f2;
+  --accent: #49634e;
+  --accent-dark: #354c3a;
+  --accent-soft: #eaf0e7;
+  --accent-bright: #647d69;
   --gold: #e8a33d;
   --star: var(--gold);
   --danger: #c0342b;
@@ -28,11 +28,6 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 24px; background: var(--canvas); }
 body { margin: 0; color: var(--ink); background: var(--canvas); font: 400 14.5px/1.8 var(--font-body); -webkit-font-smoothing: antialiased; font-synthesis: none; }
-body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(720px 420px at 88% -10%, rgb(124 111 240 / .14), transparent 70%),
-    radial-gradient(560px 380px at -12% 22%, rgb(232 163 61 / .08), transparent 70%);
-}
 b, strong { font-weight: 500; }
 ::selection { color: #ffffff; background: var(--accent); }
 button, input, select, textarea { font: inherit; }

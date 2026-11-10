@@ -1,5 +1,6 @@
 import hmac
 import sqlite3
+import logging
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -43,6 +44,7 @@ async def execute(operation: str, request: Request, authorization: str = Header(
     except ValidationError:
         raise HTTPException(status_code=422, detail="Tool payload does not match the contract") from None
     except CloudModelError as failure:
+        logging.getLogger("careerpilot.agents").warning("agent_task_failed operation=%s error_code=%s", operation, failure.error_code)
         return JSONResponse(status_code=failure.status_code, content={"error_code": failure.error_code, "detail": failure.detail})
     except (KeyError, ValueError, TypeError, sqlite3.Error):
         raise HTTPException(status_code=502, detail="Tool input or provider configuration invalid") from None

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./workspace.css";
 
 const careerFont = localFont({
   src: [

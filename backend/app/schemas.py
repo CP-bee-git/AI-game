@@ -14,6 +14,7 @@ class HealthResponse(BaseModel):
 
 
 class ModelConfigResponse(BaseModel):
+    backend: Literal["legacy", "dify"] = "legacy"
     provider: str
     model: str
     image_ocr: str
@@ -207,6 +208,7 @@ class InterviewSessionResponse(BaseModel):
     turns: list[InterviewTurn] = Field(default_factory=list)
     overall_score: float | None = Field(default=None, ge=0, le=5)
     summary: list[str] = Field(default_factory=list)
+    summary_pending: bool = False
     notice: str | None = None
     engine: Literal["rules", "model"] = "rules"
 
@@ -229,4 +231,3 @@ class ExportArtifactResponse(BaseModel):
     filename: str
     content_type: str
     content: str
-

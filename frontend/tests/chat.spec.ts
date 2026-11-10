@@ -73,7 +73,7 @@ test("chat on a narrow phone preserves the question after a cloud failure and ca
   await page.getByRole("button", { name: "发送", exact: true }).click();
   await expect(page.locator(".chat-message.assistant")).toContainText("学习经历");
   await expect(page.locator("#chat").getByRole("alert")).toHaveCount(0);
-  await expect(page.locator(".chat-privacy")).toHaveCSS("color", "rgb(0, 0, 0)");
+  await expect(page.locator(".chat-privacy")).toContainText("聊天数据说明");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

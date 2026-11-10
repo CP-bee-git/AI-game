@@ -213,9 +213,12 @@ def stop() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["start", "stop", "status", "_serve"])
+    parser.add_argument("command", choices=["start", "stop", "status", "public", "_serve"])
     parser.add_argument("--public", action="store_true", help="使用 cpolar 免费随机域名发布")
     args = parser.parse_args()
+    if args.command == "public":
+        public()
+        return 0
     if args.command == "_serve":
         return supervise()
     if args.command == "stop":
