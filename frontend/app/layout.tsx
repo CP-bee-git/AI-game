@@ -36,8 +36,8 @@ const careerSerifFont = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "就业罗盘 | 简历与岗位",
-  description: "整理简历里的经历和技能，对照岗位要求，查看修改建议并练习面试。",
+  title: "就业罗盘 | 中国简历分析与面试训练",
+  description: "面向中国校招与社招场景，核对简历证据、分析岗位要求并练习中文面试。",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -146,17 +146,22 @@ def run() -> None:
             result = {"ok": True}
         elif "OCR" in system:
             result = "PYTHON SQL EXCEL DATA ANALYST"
-        elif "求职咨询助手" in system:
+        elif "简历分析和面试训练顾问" in system:
+            assert "中国大陆校招与社招" in system and "中文面试准备" in system
             conversation = json.loads(body["messages"][1]["content"])
             assert conversation[-1]["role"] == "user"
             result = {"reply": "可以先说说你感兴趣的岗位，以及目前做过的一两件具体的事。"}
-        elif "简历结构化" in system:
+        elif "简历分析助手" in system:
+            assert "中国大陆求职语境" in system and "实习与正式工作" in system
             result = {"education": [{"degree": "本科"}], "skills": [{"name": "Python", "normalized_name": "python"}, {"name": "SQL", "normalized_name": "sql"}], "experiences": [], "projects": [{"name": "数据分析项目"}], "preferences": {"cities": ["上海"]}, "warnings": []}
-        elif "简历辅导员" in system:
+        elif "简历分析顾问" in system:
+            assert "中国大陆校招与社招" in system and "本人行动" in system
             result = {"optional_improve": ["补充项目结果"], "checklist": ["核对事实"]}
-        elif "模拟面试官" in system:
+        elif "求职模拟面试官" in system:
+            assert "中国大陆招聘流程" in system and "校招、社招" in system
             result = {"questions": [{"question": question, "keywords": []} for question in ["请介绍一个项目及其结果。", "请说明你的数据分析方法。", "请说明你如何验证项目结果。", "请说明一次具体的团队协作。"]]}
-        elif "练习反馈" in system:
+        elif "面试练习反馈" in system:
+            assert "中国求职者" in system and "STAR术语" in system
             result = {"score": 4.0, "feedback": "回答包含项目证据。"}
         else:
             raise AssertionError(f"Unexpected cloud request: {system}")

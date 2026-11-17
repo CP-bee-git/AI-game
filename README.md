@@ -1,10 +1,16 @@
 # CareerPilot · 就业罗盘
 
-从一份简历开始：核对经历、比较岗位、修改表达，再练习面试。
+面向中国校招与社招的简历分析和面试训练：核对经历证据、对照岗位要求、改进表达，再练习中文面试。
 
-[项目源码](https://github.com/CP-bee-git/AI-game) · [部署与模型配置](docs/DIFY.md) · [前端与接口交接](docs/FRONTEND.md) · [职业数据来源](docs/CHINA_CAREER_SOURCES.md)
+[项目源码](https://github.com/CP-bee-git/AI-game) · [前端运行说明](docs/FRONTEND_RUNNING.md) · [部署与模型配置](docs/DIFY.md) · [前端与接口交接](docs/FRONTEND.md) · [职业数据来源](docs/CHINA_CAREER_SOURCES.md)
+
+下一阶段规划（尚未实施）：[产品交接与前端升级方案](docs/HANDOFF_PRODUCT_UPGRADE.md) · [接手任务与模型提示词](docs/HANDOFF_PROMPTS.md)。
 
 ![就业罗盘工作台](docs/preview.png)
+
+开发者工作台（`/developer`）：求职／面试／比赛的精准场景攻略，附联网来源与导出。
+
+![开发者工作台](docs/developer-preview.png)
 
 ## 已交付的工作台
 
@@ -29,7 +35,7 @@
 | Dify控制台 | <http://127.0.0.1:8088> |
 | 业务接口 | <http://127.0.0.1:8010/docs> |
 
-本机已安装Dify 1.19.0，11个工作流发布。DeepSeek `deepseek-v4.1-flash` 与千问 `qwen-flash` 共用百炼API Key；豆包仍需要独立Ark凭据。供应商Key和Dify应用Key只保存在服务端私有配置，均不提交Git。
+本机已安装Dify 1.19.0，17个工作流发布（含简历指导、段落润色、简历草稿、场景证据、场景攻略与攻略复核）。DeepSeek `deepseek-v4.1-flash` 与千问 `qwen-flash` 共用百炼API Key；豆包仍需要独立Ark凭据。供应商Key和Dify应用Key只保存在服务端私有配置，均不提交Git。联网检索可选配 `TAVILY_API_KEY`（仅服务端持有），未配置时攻略以明确标注的通用模式返回。
 
 管理员账号和凭据在本机 `.private/dify/admin.json`。请勿把文件、数据库或运行日志上传到公开仓库。
 
@@ -67,7 +73,7 @@ bash dify/services.sh stop
 ```text
 frontend/app/        工作台编排、报告/面试/媒体/资料核对组件、隐私说明
 backend/app/         会话隔离、存储、Dify业务适配、Agent工具
-dify/workflows/      11个可导入工作流
+dify/workflows/      17个可导入工作流
 dify/knowledge/      55条带来源职业条目
 scripts/            部署、导入和验证工具
 docs/               当前截图、部署说明、接口交接、项目介绍PPT

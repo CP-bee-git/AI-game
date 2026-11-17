@@ -8,6 +8,7 @@ import ReportView from "./report-view";
 import InterviewRoom from "./interview-room";
 import MediaStudio from "./media-studio";
 import ProfileReview from "./profile-review";
+import ResumeCenter from "./resume-center";
 import type { DiagnosticReport, InterviewSession, Orchestration } from "./workspace-types";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
@@ -38,6 +39,7 @@ type ProfileDraft = {
   preferences: Record<string, unknown>;
   warnings: string[];
   status?: string;
+  source_revision?: string;
 };
 
 type ProfileAnalysis = {
@@ -126,6 +128,7 @@ export default function Home() {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [upload, setUpload] = useState<UploadResult | null>(null);
   const [profile, setProfile] = useState<ProfileDraft | null>(null);
+  const [blocks, setBlocks] = useState<Array<{ block_id: string; text: string }>>([]);
   const [generatingProfile, setGeneratingProfile] = useState(false);
   const [skillText, setSkillText] = useState("");
   const [confirmingProfile, setConfirmingProfile] = useState(false);
@@ -392,6 +395,13 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(errorMessage(data.detail, "画像确认失败"));
       setProfile(data);
+      try {
+        const blocksResponse = await fetch(`${apiBase}/resumes/${upload.resume_id}/blocks`, { credentials: "same-origin", cache: "no-store" });
+        if (blocksResponse.ok) {
+          const blocksData = await blocksResponse.json();
+          setBlocks(blocksData.blocks ?? []);
+        }
+      } catch { /* blocks are optional for the resume center */ }
       await loadAnalysis(upload.resume_id);
     } catch (confirmError) {
       setError(confirmError instanceof Error ? confirmError.message : "画像确认失败");
@@ -534,17 +544,17 @@ export default function Home() {
       </aside>
       <main className="shell" id="main-content">
 
-      <div className="workspace-head"><span>求职工作台 <span className="breadcrumb-separator">/</span> 简历分析</span><div className="topbar-meta" aria-live="polite"><span className={`status-dot ${apiState === "online" ? model?.chat_configured ? "online" : "checking" : apiState}`} /><span>{apiState === "online" ? model?.chat_configured ? (managed ? "服务已配置" : "模型已连接") : "模型未连接" : apiState === "offline" ? "网站暂时不可用" : "正在连接"}</span></div></div>
+      <div className="workspace-head"><span>求职工作台 <span className="breadcrumb-separator">/</span> 中国简历与面试</span><div className="topbar-meta" aria-live="polite"><span className={`status-dot ${apiState === "online" ? model?.chat_configured ? "online" : "checking" : apiState}`} /><span>{apiState === "online" ? model?.chat_configured ? (managed ? "服务已配置" : "模型已连接") : "模型未连接" : apiState === "offline" ? "网站暂时不可用" : "正在连接"}</span></div></div>
       <div className="workspace-frame"><div className="workspace-content">
       <section className="workspace-intro" aria-labelledby="workspace-title">
-        <div className="intro-copy"><p className="page-label">CAREERPILOT / 求职手记</p><h1 id="workspace-title">从一份简历，找到下一步。</h1><p>整理经历，对照岗位，把准备落在具体的事情上。</p><div className="intro-links"><a className="text-link" href="#workspace">开始整理 <ArrowRight size={14} /></a><a className="text-link" href="#chat">直接聊天 <ArrowRight size={14} /></a><a className="text-link" href="#demo">先看示例 <ArrowRight size={14} /></a></div></div>
+        <div className="intro-copy"><p className="page-label">CAREERPILOT / 中国求职训练</p><h1 id="workspace-title">把简历写清楚，把面试练具体。</h1><p>围绕中国校招与社招场景，分析简历证据、对照岗位要求，再练习真实面试表达。</p><div className="intro-links"><a className="text-link" href="#workspace">分析简历 <ArrowRight size={14} /></a><a className="text-link" href="#jobs">准备面试 <ArrowRight size={14} /></a><a className="text-link" href="#demo">先看示例 <ArrowRight size={14} /></a></div></div>
         <div className="session-progress" aria-label={`当前第 ${activeStep + 1} 步，共 5 步：${steps[activeStep]}`}><span className="session-progress-label">本次进度</span><div className="session-progress-count"><strong>{String(activeStep + 1).padStart(2,"0")}</strong><span>/ 05</span></div><div className="session-progress-bars" aria-hidden="true">{steps.map((step,index)=><span className={index <= activeStep ? "reached" : ""} key={step} />)}</div><span className="session-progress-step">{steps[activeStep]}</span></div>
       </section>
 
 
       {managed ? <section className="managed-service cloud-panel" id="cloud-config" aria-labelledby="service-title" tabIndex={-1}>
-        <div className="section-heading"><div><p className="page-label">服务连接</p><h2 id="service-title">评分与写作，各有分工</h2></div><span className="stage-tag">{model.chat_configured ? "由工作流处理" : "待管理员配置"}</span></div>
-        <div className="agent-roster"><div><strong>DeepSeek</strong><span>证据评分 · 岗位比较 · 复核</span></div><div><strong>千问</strong><span>简历整理 · 报告 · 面试复盘</span></div><div><strong>豆包</strong><span>{service?.media_enabled ? "职业影像 · 按需生成" : "职业影像 · 尚未启用"}</span></div></div>
+        <div className="section-heading"><div><p className="page-label">服务连接</p><h2 id="service-title">简历分析与面试训练</h2></div><span className="stage-tag">{model.chat_configured ? "由工作流处理" : "待管理员配置"}</span></div>
+        <div className="agent-roster"><div><strong>DeepSeek</strong><span>简历证据评分 · 岗位匹配复核 · 面试回答评价</span></div><div><strong>千问</strong><span>中文简历整理 · 面试出题 · 复盘建议</span></div><div><strong>训练范围</strong><span>中国校招与社招语境 · 以用户提供的岗位信息为准</span></div></div>
         <p className="service-note">连接由管理员维护，无需填写 API Key。{service ? `${Object.values(service.workflows).filter(Boolean).length} 项工作流已配置；实际处理结果以任务返回为准。` : "正在读取工作流状态。"}</p>
         <button className="text-button" type="button" onClick={() => { void refreshService(); void refreshModel().catch(() => setServiceError("连接状态读取失败，请稍后重试。")); }}>刷新服务状态</button>
         {serviceError && <p role="status" className="muted">{serviceError}</p>}
@@ -634,6 +644,14 @@ export default function Home() {
       </section>}
 
       {report && <ReportView report={report} exporting={exporting} onExport={(format) => { void exportReport("diagnosis", report.report_id, format); }} />}
+      {profile?.status === "confirmed" && upload && (
+        <ResumeCenter
+          resumeId={upload.resume_id}
+          sourceRevision={profile.source_revision ?? ""}
+          jobTitle={report?.job_title}
+          blocks={blocks}
+        />
+      )}
       {interview && <InterviewRoom interview={interview} answer={interviewAnswer} answering={answering} exporting={exporting} retrying={retryingSummary} onAnswer={setInterviewAnswer} onSubmit={() => { void answerCurrentQuestion(); }} onRetry={() => { void retrySummary(); }} onExport={(format) => { void exportReport("interview", interview.session_id, format); }} />}
       <MediaStudio apiBase={apiBase} service={service} />
       </div>
@@ -645,7 +663,7 @@ export default function Home() {
       </WorkspaceContext>
       </div>
 
-      <footer><a className="brand footer-brand" href="/"><span>就业罗盘 <small>CareerPilot</small></span></a><span>简历整理、岗位比较与面试练习</span><a href="/privacy">隐私与数据处理说明 <ArrowRight size={13} /></a></footer>
+      <footer><a className="brand footer-brand" href="/"><span>就业罗盘 <small>CareerPilot</small></span></a><span>中国简历分析、岗位对照与中文面试训练</span><a href="/privacy">隐私与数据处理说明 <ArrowRight size={13} /></a><a className="footer-dev-link" href="/developer"><span><b>开发者工作台</b><small>为技术求职、面试与比赛，定制一份有来源的准备攻略。</small></span>进入工作台 <ArrowRight size={13} /></a></footer>
       </main>
     </div>
   );

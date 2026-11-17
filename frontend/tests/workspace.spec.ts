@@ -10,7 +10,8 @@ test("managed workspace hides keys, collapses records and respects disabled medi
   let mediaCalls = 0;
   page.on("request", (request) => { if (request.method() === "POST" && request.url().endsWith("/api/v1/media")) mediaCalls++; });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "评分与写作，各有分工" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "简历分析与面试训练" })).toBeVisible();
+  await expect(page.getByText("中国校招与社招语境 · 以用户提供的岗位信息为准")).toBeVisible();
   await expect(page.getByLabel("千问 / 阿里云 API Key")).toHaveCount(0);
   const collapse = page.getByRole("button", { name: "收起工作记录" });
   await collapse.click();

@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     ark_image_model: str = ""
     ark_video_model: str = ""
     media_enabled: bool = False
+    tavily_api_key: str = Field(default="", repr=False)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", env_ignore_empty=True, extra="ignore")
 

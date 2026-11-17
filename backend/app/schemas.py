@@ -95,6 +95,7 @@ class ResumeBlock(BaseModel):
 class ProfileDraft(BaseModel):
     resume_id: UUID
     status: Literal["awaiting_confirmation", "confirmed"] = "awaiting_confirmation"
+    source_revision: str = ""
     education: list[dict] = Field(default_factory=list)
     skills: list[dict] = Field(default_factory=list)
     experiences: list[dict] = Field(default_factory=list)
@@ -221,8 +222,8 @@ class ModelPingResponse(BaseModel):
 
 
 class ExportRequest(BaseModel):
-    type: Literal["profile", "diagnosis", "interview"]
-    resource_id: UUID
+    type: Literal["profile", "diagnosis", "interview", "resume_draft", "scenario"]
+    resource_id: UUID | str
     format: Literal["json", "html"] = "html"
 
 
@@ -231,3 +232,47 @@ class ExportArtifactResponse(BaseModel):
     filename: str
     content_type: str
     content: str
+
+
+class ResumeGuidanceRequest(BaseModel):
+    resume_id: UUID | None = None
+    source_revision: str = Field(default="", max_length=100)
+    job_title: str = Field(default="", max_length=200)
+
+
+class ResumeRewriteRequest(BaseModel):
+    resume_id: UUID | None = None
+    source_revision: str = Field(default="", max_length=100)
+    block_ids: list[str] = Field(default_factory=list, max_length=12)
+    job_title: str = Field(default="", max_length=200)
+
+
+class ResumeDraftRequest(BaseModel):
+    resume_id: UUID | None = None
+    source_revision: str = Field(default="", max_length=100)
+    template: Literal["campus", "social"] = "campus"
+    job_title: str = Field(default="", max_length=200)
+    manual_profile: dict | None = None
+
+
+class ResumeDraftUpdateRequest(BaseModel):
+    name_line: str = Field(default="", max_length=100)
+    contact_line: str = Field(default="", max_length=200)
+    objective: str = Field(default="", max_length=300)
+    sections: list[dict] = Field(default_factory=list, max_length=8)
+    source_revision: str = Field(default="", max_length=100)
+
+
+class ScenarioRunCreateRequest(BaseModel):
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{8,64}$")
+    type: Literal["job_search", "interview", "competition"]
+    target_name: str = Field(default="", max_length=200)
+    year_or_edition: str = Field(default="", max_length=100)
+    role_or_track: str = Field(default="", max_length=200)
+    stage: str = Field(default="", max_length=200)
+    goal: str = Field(default="", max_length=500)
+    official_urls: list[str] = Field(default_factory=list, max_length=5)
+    preparation_days: int | None = Field(default=None, ge=1, le=365)
+    daily_minutes: int | None = Field(default=None, ge=5, le=1440)
+    background_summary: str = Field(default="", max_length=1000)
+    general_mode: bool = False

@@ -11,7 +11,7 @@ from app.services.session import current_session
 
 
 Result = TypeVar("Result", bound=BaseModel)
-OPERATIONS = ("profile", "analysis", "match", "report", "questions", "evaluate", "summary", "chat", "ocr", "media_create", "media_status")
+OPERATIONS = ("profile", "analysis", "match", "report", "questions", "evaluate", "summary", "chat", "ocr", "media_create", "media_status", "resume_guidance", "resume_rewrite", "resume_draft", "scenario_evidence", "scenario_strategy", "scenario_review")
 
 
 class DifyClient:

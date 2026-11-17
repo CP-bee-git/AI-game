@@ -15,6 +15,12 @@ OPERATIONS = {
     "ocr": ("简历 OCR · 千问视觉", ["ocr"]),
     "media_create": ("职业媒体创建 · 豆包", ["media_create"]),
     "media_status": ("职业视频状态 · 豆包", ["media_status"]),
+    "resume_guidance": ("简历提升指南 · 千问", ["resume_guidance"]),
+    "resume_rewrite": ("简历段落润色 · 千问", ["resume_rewrite"]),
+    "resume_draft": ("简历草稿生成 · 千问", ["resume_draft"]),
+    "scenario_evidence": ("场景证据整理 · 千问", ["scenario_evidence"]),
+    "scenario_strategy": ("场景攻略生成 · 千问", ["scenario_strategy"]),
+    "scenario_review": ("攻略事实复核 · DeepSeek", ["scenario_review"]),
 }
 
 

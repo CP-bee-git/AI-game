@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime
 from io import BytesIO
 import json
@@ -38,6 +39,11 @@ from app.schemas import (
     ProfileConfirmRequest,
     ProfileDraft,
     ResumeResponse,
+    ResumeDraftRequest,
+    ResumeDraftUpdateRequest,
+    ResumeGuidanceRequest,
+    ResumeRewriteRequest,
+    ScenarioRunCreateRequest,
     TaskStatus,
 )
 from app.services.llm import CloudModelError, QwenCloudProvider, model_config
@@ -47,10 +53,25 @@ from app.services.demo import load_china_demo, make_demo_resume
 from app.services.exporter import render_export
 from app.services.analysis import profile_analysis
 from app.services.careers import career_matches
-from app.services.interview import build_questions, evaluate_answer, evaluate_answer_with_model, generate_questions
+from app.services.chat import CHAT_SYSTEM_PROMPT
+from app.services.interview import (
+    build_questions,
+    evaluate_answer,
+    evaluate_answer_with_model,
+    generate_questions,
+)
 from app.services.matching import match_jobs
 from app.services.profile import extract_profile
 from app.services.resume import initial_resume_blocks
+from app.services.resume_docs import (
+    collect_confirmed_facts,
+    draft_placeholders,
+    generate_guidance,
+    generate_resume_draft,
+    rewrite_blocks,
+    validate_rewrite,
+)
+from app.services.scenarios import ScenarioInput, run_scenario
 from app.services.state import SQLiteMap
 from app.services.storage import LocalStorage
 from app.services.session import BrowserSessionMiddleware, allow_configuration_attempt, clear_model_settings, model_settings, save_model_settings
@@ -72,7 +93,7 @@ app.add_middleware(
 )
 
 def configure_state(path: Path | None = None) -> None:
-    global _resume_blocks, _profiles, _jobsets, _interviews, _reports, _exports, _match_runs, _consents, _analyses, _media
+    global _resume_blocks, _profiles, _jobsets, _interviews, _reports, _exports, _match_runs, _consents, _analyses, _media, _resume_guidance, _resume_drafts, _scenario_runs
     state_path = path or settings.state_db_path
     _resume_blocks = SQLiteMap(state_path, "resume_blocks")
     _profiles = SQLiteMap(state_path, "profiles")
@@ -84,6 +105,9 @@ def configure_state(path: Path | None = None) -> None:
     _consents = SQLiteMap(state_path, "consents")
     _analyses = SQLiteMap(state_path, "analyses")
     _media = SQLiteMap(state_path, "media")
+    _resume_guidance = SQLiteMap(state_path, "resume_guidance")
+    _resume_drafts = SQLiteMap(state_path, "resume_drafts")
+    _scenario_runs = SQLiteMap(state_path, "scenario_runs")
 
 
 configure_state()
@@ -255,12 +279,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         return await DifyClient(settings).run("chat", payload.model_dump(), ChatResponse)
     require_qwen_chat()
     return await QwenCloudProvider(model_settings(settings)).chat_json(
-        "你是就业罗盘的求职咨询助手。用户无需上传简历即可与你讨论职业方向、岗位选择、简历表达和面试准备。"
-        "只根据这次对话里用户提供的信息回答，不声称已经读取简历、调用职业库或查询实时招聘数据。"
-        "不要编造用户经历、测评分数或岗位事实；信息不够时，问一两个具体问题。"
-        "使用自然、简洁的中文，通常控制在300字以内，必要时展开，但不超过1500字。"
-        "reply 中使用分段纯文本，不使用 Markdown 标记。"
-        "下面是按时间排列的对话，请接着最后一个用户问题作答。",
+        CHAT_SYSTEM_PROMPT,
         json.dumps([message.model_dump() for message in payload.messages], ensure_ascii=False),
         ChatResponse,
     )
@@ -378,10 +397,12 @@ async def get_resume_profile(resume_id: UUID) -> ProfileDraft:
 async def confirm_resume_profile(resume_id: UUID, request: ProfileConfirmRequest) -> ProfileDraft:
     if resume_id not in _resume_blocks:
         raise HTTPException(status_code=404, detail="Resume not found")
+    revision = hashlib.sha256(json.dumps(request.model_dump(), ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()[:16]
     profile = {
         "resume_id": resume_id,
         "status": "confirmed",
         **request.model_dump(),
+        "source_revision": revision,
         "warnings": _profiles.get(resume_id, {}).get("warnings", []),
         "demo_dataset": _profiles.get(resume_id, {}).get("demo_dataset"),
     }
@@ -648,6 +669,16 @@ async def create_export(request: ExportRequest) -> ExportArtifactResponse:
         data = DiagnosticReport.model_validate(report).model_dump(mode="json") if report else None
         if data is not None and report.get("profile_analysis"):
             data["profile_analysis"] = report["profile_analysis"]
+    elif request.type == "resume_draft":
+        data = _resume_drafts.get(request.resource_id)
+        if data is not None and data.get("resume_id"):
+            profile = _profiles.get(data["resume_id"])
+            if profile and str(profile.get("source_revision", "")) != str(data.get("source_revision", "")):
+                data = {**data, "stale_notice": "基于旧版本画像，请重新生成后再导出正式版。"}
+    elif request.type == "scenario":
+        data = _scenario_runs.get(request.resource_id)
+        if data is not None and data.get("status") != "completed":
+            raise HTTPException(status_code=409, detail="攻略尚未生成完成，暂不能导出。")
     else:
         data = _interview_response(request.resource_id).model_dump(mode="json") if request.resource_id in _interviews else None
         if data is not None and _interviews[request.resource_id].get("profile_analysis"):
@@ -735,3 +766,209 @@ async def start_china_demo() -> dict:
         task=TaskStatus(task_id=uuid4(), status="succeeded", progress=100, message="合成DOCX已实际解析；画像为人工预置样例，不是模型返回。"),
     )
     return {"notice": data["notice"], "resume": resume, "profile": profile, "jobset": jobset}
+
+
+def _confirmed_profile_or_404(resume_id: UUID | None) -> tuple[UUID, dict]:
+    if resume_id is None:
+        raise HTTPException(status_code=422, detail="请先上传简历并确认画像，或在请求中提供手填资料。")
+    profile = _profiles.get(resume_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="未找到当前浏览器的画像")
+    if profile.get("status") != "confirmed":
+        raise HTTPException(status_code=409, detail="请先核对并确认简历画像")
+    return resume_id, profile
+
+
+def _check_revision(profile: dict, source_revision: str) -> None:
+    current = str(profile.get("source_revision", ""))
+    if source_revision and current and source_revision != current:
+        raise HTTPException(status_code=409, detail="画像已更新，请基于最新确认内容重新生成。")
+
+
+def _job_context(job_title: str) -> dict | None:
+    return {"title": job_title} if job_title else None
+
+
+@app.post(f"{settings.api_prefix}/resume-guidance", status_code=201)
+async def create_resume_guidance(request: ResumeGuidanceRequest) -> dict:
+    resume_id, profile = _confirmed_profile_or_404(request.resume_id)
+    _check_revision(profile, request.source_revision)
+    if settings.ai_backend == "dify":
+        from app.services.resume_docs import GuidanceResult
+        result = GuidanceResult.model_validate(await DifyClient(settings).run("resume_guidance", {"confirmed_facts": collect_confirmed_facts(profile), "job": _job_context(request.job_title)}, GuidanceResult))
+    else:
+        require_qwen_chat()
+        provider = QwenCloudProvider(model_settings(settings))
+        result = await generate_guidance(profile, _job_context(request.job_title), provider)
+    guidance_id = str(uuid4())
+    record = {
+        "guidance_id": guidance_id,
+        "resume_id": str(resume_id),
+        "source_revision": profile.get("source_revision", ""),
+        "job_title": request.job_title,
+        "created_at": datetime.now(UTC).isoformat(),
+        **result.model_dump(),
+    }
+    _resume_guidance[guidance_id] = record
+    return record
+
+
+@app.get(f"{settings.api_prefix}/resume-guidance/{{guidance_id}}")
+async def get_resume_guidance(guidance_id: UUID) -> dict:
+    record = _resume_guidance.get(guidance_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Guidance not found")
+    stale = ""
+    profile = _profiles.get(record.get("resume_id", ""))
+    if profile and str(profile.get("source_revision", "")) != str(record.get("source_revision", "")):
+        stale = "基于旧版本画像，请重新生成。"
+    return {**record, "stale_notice": stale}
+
+
+@app.post(f"{settings.api_prefix}/resume-rewrites", status_code=201)
+async def create_resume_rewrites(request: ResumeRewriteRequest) -> dict:
+    resume_id, profile = _confirmed_profile_or_404(request.resume_id)
+    _check_revision(profile, request.source_revision)
+    if not request.block_ids:
+        raise HTTPException(status_code=422, detail="请至少选择一段原文进行润色。")
+    blocks = _resume_blocks.get(resume_id) or []
+    selected = [block for block in blocks if str(block.get("block_id")) in set(request.block_ids)]
+    if not selected:
+        raise HTTPException(status_code=404, detail="未找到所选原文段落。")
+    facts = collect_confirmed_facts(profile)
+    fact_ids = {fact["fact_id"] for fact in facts}
+    if settings.ai_backend == "dify":
+        from app.services.resume_docs import RewriteResult
+        result = RewriteResult.model_validate(await DifyClient(settings).run("resume_rewrite", {"selected_blocks": selected, "confirmed_facts": facts, "job": _job_context(request.job_title)}, RewriteResult))
+    else:
+        require_qwen_chat()
+        provider = QwenCloudProvider(model_settings(settings))
+        result = await rewrite_blocks(selected, facts, _job_context(request.job_title), provider)
+    checked = [validate_rewrite(item, selected, fact_ids).model_dump() for item in result.rewrites]
+    return {
+        "resume_id": str(resume_id),
+        "source_revision": profile.get("source_revision", ""),
+        "rewrites": checked,
+    }
+
+
+def _profile_from_manual(manual: dict) -> dict:
+    profile = {
+        "education": manual.get("education") or [],
+        "skills": manual.get("skills") or [],
+        "experiences": manual.get("experiences") or [],
+        "projects": manual.get("projects") or [],
+        "preferences": manual.get("preferences") or {},
+        "warnings": ["手填资料为用户自述，未与原始文件核对。"],
+        "status": "confirmed",
+        "source_revision": "manual",
+    }
+    return profile
+
+
+@app.post(f"{settings.api_prefix}/resume-drafts", status_code=201)
+async def create_resume_draft(request: ResumeDraftRequest) -> dict:
+    if request.manual_profile is not None:
+        profile = _profile_from_manual(request.manual_profile)
+        resume_id = request.resume_id
+    else:
+        resume_id, profile = _confirmed_profile_or_404(request.resume_id)
+        _check_revision(profile, request.source_revision)
+    if settings.ai_backend == "dify":
+        from app.services.resume_docs import ResumeDraftContent
+        content = ResumeDraftContent.model_validate(await DifyClient(settings).run("resume_draft", {"confirmed_facts": collect_confirmed_facts(profile), "template": "技术校招" if request.template == "campus" else "技术社招", "job": _job_context(request.job_title)}, ResumeDraftContent))
+    else:
+        require_qwen_chat()
+        provider = QwenCloudProvider(model_settings(settings))
+        content = await generate_resume_draft(profile, request.template, _job_context(request.job_title), provider)
+    placeholders = draft_placeholders(content)
+    draft_id = str(uuid4())
+    record = {
+        "draft_id": draft_id,
+        "resume_id": str(resume_id) if resume_id else None,
+        "template": request.template,
+        "job_title": request.job_title,
+        "source_revision": profile.get("source_revision", ""),
+        "created_at": datetime.now(UTC).isoformat(),
+        **content.model_dump(),
+        "placeholders": placeholders,
+        "export_blocked": bool(placeholders) and content.draft_status != "complete",
+    }
+    _resume_drafts[draft_id] = record
+    return record
+
+
+@app.get(f"{settings.api_prefix}/resume-drafts/{{draft_id}}")
+async def get_resume_draft(draft_id: UUID) -> dict:
+    record = _resume_drafts.get(draft_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    stale = ""
+    if record.get("resume_id"):
+        profile = _profiles.get(record["resume_id"])
+        if profile and str(profile.get("source_revision", "")) != str(record.get("source_revision", "")):
+            stale = "基于旧版本画像，请重新生成。"
+    return {**record, "stale_notice": stale}
+
+
+@app.patch(f"{settings.api_prefix}/resume-drafts/{{draft_id}}")
+async def update_resume_draft(draft_id: UUID, request: ResumeDraftUpdateRequest) -> dict:
+    record = _resume_drafts.get(draft_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    if request.source_revision and record.get("source_revision") and request.source_revision != record["source_revision"]:
+        raise HTTPException(status_code=409, detail="草稿已被更新，请刷新后再编辑。")
+    record.update({
+        "name_line": request.name_line or record.get("name_line", ""),
+        "contact_line": request.contact_line or record.get("contact_line", ""),
+        "objective": request.objective or record.get("objective", ""),
+        "sections": request.sections or record.get("sections", []),
+        "updated_at": datetime.now(UTC).isoformat(),
+    })
+    _resume_drafts[draft_id] = record
+    return record
+
+
+@app.post(f"{settings.api_prefix}/scenario-runs", status_code=202)
+async def create_scenario_run(request: ScenarioRunCreateRequest) -> dict:
+    scenario = ScenarioInput.model_validate(request.model_dump())
+    fingerprint = hashlib.sha256(json.dumps(scenario.model_dump(exclude={"request_id"}), ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+    for key in list(_scenario_runs):
+        record = _scenario_runs[key]
+        if record.get("request_id") == scenario.request_id:
+            if record.get("fingerprint") != fingerprint:
+                raise HTTPException(status_code=409, detail="此 request_id 已用于其他场景，请核对原任务。")
+            return {"run_id": key, "status": record.get("status", "queued"), "deduplicated": True}
+    run_id = str(uuid4())
+    record = {
+        "run_id": run_id,
+        "request_id": scenario.request_id,
+        "fingerprint": fingerprint,
+        "status": "queued",
+        "created_at": datetime.now(UTC).isoformat(),
+        "scenario": scenario.model_dump(),
+        "warnings": [],
+    }
+    _scenario_runs[run_id] = record
+    import asyncio
+    task = asyncio.create_task(run_scenario(run_id, scenario, model_settings(settings), _scenario_runs))
+    def _on_done(done: asyncio.Task) -> None:
+        if done.cancelled():
+            return
+        failure = done.exception()
+        if failure is not None:
+            logger.warning("scenario_run_failed run_id=%s error=%s", run_id, type(failure).__name__)
+            current = _scenario_runs.get(run_id)
+            if current is not None and current.get("status") not in {"completed", "failed", "needs_clarification"}:
+                current.update(status="failed", error="场景攻略任务异常结束，请重试。")
+                _scenario_runs[run_id] = current
+    task.add_done_callback(_on_done)
+    return {"run_id": run_id, "status": "queued", "deduplicated": False}
+
+
+@app.get(f"{settings.api_prefix}/scenario-runs/{{run_id}}")
+async def get_scenario_run(run_id: UUID) -> dict:
+    record = _scenario_runs.get(run_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Scenario run not found")
+    return record

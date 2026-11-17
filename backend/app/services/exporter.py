@@ -111,8 +111,124 @@ def _interview(data: Mapping) -> str:
     return '<div class="turn-list">' + ''.join(rows) + '</div>'
 
 
+RESUME_STYLES = """
+:root{color-scheme:light;--ink:#1f2430;--muted:#5d6472;--line:#e2e5ec;--accent:#14497c;--paper:#ffffff}
+*{box-sizing:border-box}
+body{margin:0;background:#f3f4f7;color:var(--ink);font:14px/1.75 "PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;overflow-wrap:anywhere}
+.toolbar{max-width:820px;margin:20px auto -8px;text-align:right;color:var(--muted);font-size:12px}
+.toolbar button{font:inherit;color:var(--ink);background:#ffffff;border:1px solid #d2d5dc;border-radius:6px;padding:8px 16px;cursor:pointer}
+.resume-sheet{max-width:820px;margin:24px auto 48px;background:var(--paper);padding:44px 52px 40px;box-shadow:0 1px 4px rgb(15 23 42 / .08)}
+.resume-head{border-bottom:2.5px solid var(--accent);padding-bottom:16px;margin-bottom:8px}
+.resume-name{font-size:26px;font-weight:600;letter-spacing:1px;margin:0 0 4px}
+.resume-contact{color:var(--muted);font-size:12.5px}
+.resume-objective{margin:12px 0 0;font-size:13.5px}
+.resume-section{margin-top:22px}
+.resume-section>h2{font-size:15px;font-weight:600;color:var(--accent);letter-spacing:2px;border-bottom:1px solid var(--line);padding-bottom:6px;margin:0 0 10px}
+.resume-item{margin:0 0 12px}
+.resume-item-heading{display:flex;justify-content:space-between;gap:16px;font-weight:550;font-size:14px}
+.resume-item ul{margin:4px 0 0;padding-left:1.25em}
+.resume-item li{margin:2px 0}
+.placeholder{color:#a33d3d;background:#fbeaea;border-radius:3px;padding:0 4px}
+.resume-notice{margin-top:26px;padding:12px 16px;border:1px solid #ead9a8;background:#fdf8ea;color:#6d5a17;font-size:12.5px;line-height:1.7}
+.resume-missing{margin-top:14px;font-size:12.5px;color:var(--muted)}
+.resume-missing li{margin:2px 0}
+@media print{
+body{background:#fff}.toolbar{display:none}
+.resume-sheet{box-shadow:none;margin:0 auto;max-width:100%;padding:10mm 12mm}
+@page{size:A4;margin:12mm}
+.resume-section{break-inside:avoid-page}
+}
+"""
+
+
+def _render_resume_document(data: Mapping, title: str) -> str:
+    name = _escape(data.get('name_line') or '[需本人补充真实信息]')
+    contact = _escape(data.get('contact_line') or '')
+    objective = _escape(data.get('objective') or '')
+    def mark(text: str) -> str:
+        return text.replace('[需本人补充真实信息]', '<span class="placeholder">[需本人补充真实信息]</span>')
+    sections_html = []
+    for section in data.get('sections') or []:
+        if not isinstance(section, Mapping):
+            continue
+        items_html = []
+        for item in section.get('items') or []:
+            if not isinstance(item, Mapping):
+                continue
+            heading = mark(_escape(item.get('heading') or ''))
+            lines = ''.join(f'<li>{mark(_escape(line))}</li>' for line in (item.get('lines') or []) if line)
+            items_html.append(f'<div class="resume-item">{f"<div class=\"resume-item-heading\">{heading}</div>" if heading else ""}{f"<ul>{lines}</ul>" if lines else ""}</div>')
+        sections_html.append(f'<section class="resume-section"><h2>{_escape(section.get("title") or "")}</h2>{"".join(items_html)}</section>')
+    missing = data.get('missing_information') or []
+    missing_html = ''
+    if missing:
+        missing_html = '<div class="resume-missing"><b>待补充信息</b><ul>' + ''.join(f'<li>{_escape(item)}</li>' for item in missing) + '</ul></div>'
+    notice = ''
+    if data.get('stale_notice'):
+        notice = f'<div class="resume-notice">{_escape(data["stale_notice"])}</div>'
+    status_note = '草稿（含待补充项）' if data.get('draft_status') != 'complete' else '可编辑草稿'
+    date = datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y.%m.%d')
+    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>{title} · CareerPilot</title><style>{RESUME_STYLES}</style></head><body><div class="toolbar"><span>生成日期 {date} · {status_note}</span> <button type="button" onclick="window.print()">打印 / 保存为 PDF</button></div><main class="resume-sheet"><header class="resume-head"><h1 class="resume-name">{mark(name)}</h1><div class="resume-contact">{mark(contact)}</div>{f"<p class=\"resume-objective\">{mark(objective)}</p>" if objective else ""}</header>{''.join(sections_html)}{missing_html}{notice}<footer class="resume-missing">由就业罗盘基于本人确认的事实生成；导出前请核对所有信息。</footer></main></body></html>'''
+
+
+def _scenario_sections(data: Mapping) -> list[str]:
+    sections: list[str] = []
+    scenario = data.get('scenario') or {}
+    retrieval = data.get('retrieval') or {}
+    evidence = data.get('evidence') or {}
+    strategy = data.get('strategy') or {}
+    type_labels = {'job_search': '求职', 'interview': '面试', 'competition': '比赛'}
+    confirmed_rows = []
+    for label, key in (('类型', 'type'), ('目标', 'target_name'), ('届次/年份', 'year_or_edition'), ('岗位/赛道', 'role_or_track'), ('阶段', 'stage')):
+        value = scenario.get(key)
+        if key == 'type':
+            value = type_labels.get(str(value), value)
+        if value:
+            confirmed_rows.append(f'<div><b>{label}</b><span>{_escape(value)}</span></div>')
+    searched = retrieval.get('searched_at') or '未联网核验'
+    confirmed_rows.append(f'<div><b>检索状态</b><span>{_escape(str(retrieval.get("status", "unverified")))} · {_escape(str(searched))}</span></div>')
+    if confirmed_rows:
+        sections.append(_section(f'{len(sections)+1:02d}', '场景已确认项', '<div class="meta-grid">' + ''.join(confirmed_rows) + '</div>'))
+    facts = evidence.get('verified_facts') or []
+    if facts:
+        rows = []
+        for fact in facts:
+            ids = '、'.join(_escape(sid) for sid in fact.get('source_ids') or [])
+            quote = f'<blockquote>{_escape(fact.get("quote"))}</blockquote>' if fact.get('quote') else ''
+            rows.append(f'<div class="dimension"><div class="dimension-heading"><h3>{_escape(fact.get("text"))}</h3><span class="muted">来源 {ids}</span></div>{quote}</div>')
+        sections.append(_section(f'{len(sections)+1:02d}', '已查证要求', ''.join(rows)))
+    priorities = strategy.get('priorities') or []
+    if priorities:
+        rows = []
+        for item in priorities:
+            rows.append(f'<li><b>{_escape(item.get("action"))}</b><br><span class="muted">产出：{_escape(item.get("deliverable") or "—")} · 自查：{_escape(item.get("check") or "—")}</span></li>')
+        sections.append(_section(f'{len(sections)+1:02d}', '优先动作', '<ul class="item-list">' + ''.join(rows) + '</ul>', 'priority'))
+    plan = strategy.get('plan') or []
+    if plan:
+        sections.append(_section(f'{len(sections)+1:02d}', '阶段计划', _list(plan)))
+    questions = strategy.get('practice_questions') or []
+    if questions:
+        rows = []
+        for q in questions:
+            kind = '公开真题' if q.get('kind') == 'publicly_documented' else '预测题'
+            rows.append(f'<li><b>{_escape(q.get("question"))}</b> <span class="tag">{kind}</span><br><span class="muted">{_escape(q.get("purpose") or "")}</span></li>')
+        sections.append(_section(f'{len(sections)+1:02d}', '面试/答辩练习', '<ul class="item-list">' + ''.join(rows) + '</ul>'))
+    uncertainties = (strategy.get('uncertainties') or []) + (evidence.get('missing_information') or [])
+    if uncertainties:
+        sections.append(_section(f'{len(sections)+1:02d}', '不确定与待确认', _list(uncertainties, '暂无')))
+    sources = data.get('sources') or []
+    if sources:
+        rows = []
+        for source in sources:
+            url = str(source.get('url') or '')
+            link = f'<a href="{_escape(url)}" target="_blank" rel="noreferrer">{_escape(source.get("title") or url)} ↗</a>' if url.startswith(('http://', 'https://')) else _escape(source.get('title') or '')
+            rows.append(f'<li>[{_escape(source.get("id"))}] {link}<br><span class="muted">抓取时间 {_escape(str(source.get("fetched_at") or ""))} · {_escape(str(source.get("kind") or ""))}</span></li>')
+        sections.append(_section(f'{len(sections)+1:02d}', '资料来源', '<ul class="item-list">' + ''.join(rows) + '</ul>'))
+    return sections
+
+
 STYLES = """
-:root{color-scheme:light;--ink:#242a3d;--muted:#697187;--line:#e5e8f0;--accent:#5c63b7;--paper:#ffffff}*{box-sizing:border-box}a{color:var(--accent);text-underline-offset:3px;text-decoration-thickness:1px}body{margin:0;background:#f7f8fc;color:var(--ink);font:14px/1.85 "PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;overflow-wrap:anywhere}main{max-width:1020px;margin:32px auto;background:var(--paper);border:1px solid #dddddd}.toolbar{max-width:1020px;margin:24px auto -16px;text-align:right;color:var(--muted);font-size:12px}.toolbar button{font:inherit;color:var(--ink);background:#ffffff;border:1px solid #d6d6d6;border-radius:6px;padding:8px 14px;cursor:pointer}.report-header{padding:42px 56px 36px;border-top:4px solid var(--ink);border-bottom:1px solid var(--line)}.brand-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}.wordmark{font-weight:600;font-size:19px;letter-spacing:-.5px}.brand-tag{font-size:10px;letter-spacing:2px;color:var(--muted);margin-left:10px}.edition{font-size:11px;color:var(--muted)}h1{font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:30px;font-weight:500;letter-spacing:0;line-height:1.4;margin:0 0 14px}.subtitle{font-size:15px;color:var(--muted);margin:0}.meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:28px;font-size:12px;color:var(--muted)}.meta b{display:block;font-weight:550;color:var(--ink)}.report-body{padding:8px 56px 36px}.report-section{padding:28px 0;border-bottom:1px solid var(--line)}.section-title{display:flex;gap:13px;align-items:center;margin-bottom:18px}.section-title>span{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px}h2{font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-weight:500;font-size:19px;line-height:1.5;letter-spacing:0;margin:0}h3{font-size:14px;margin:0;font-weight:650}p{margin:8px 0}.muted,.explanation{color:var(--muted)}.explanation{font-size:12px;line-height:1.9;margin:0 0 20px}.item-list{list-style:none;padding:0;margin:0;counter-reset:item}.item-list li{position:relative;padding:11px 0 11px 24px;border-bottom:1px solid #e9e9e9;white-space:pre-line}.item-list li:last-child{border-bottom:0}.item-list li:before{content:"";width:5px;height:5px;background:var(--accent);position:absolute;left:3px;top:22px;border-radius:50%}.priority .item-list li:before{background:#8e8e8e}.checklist .item-list li:before{width:10px;height:10px;background:none;border:1px solid #a7a7a7;top:18px;border-radius:2px}.tags{display:flex;gap:8px;flex-wrap:wrap}.tag{background:#f3f3f3;border:1px solid #dcdcdc;color:#585858;border-radius:4px;padding:4px 10px;font-size:12px}.profile-grid{display:grid;grid-template-columns:275px 1fr;gap:30px;align-items:start}.radar-panel{position:sticky;top:20px}.radar{width:100%;max-width:320px;display:block}.radar-grid{fill:none;stroke:#dcdcdc;stroke-width:1}.radar-axis{stroke:#e2e2e2;stroke-width:1}.radar-fill{fill:#5c63b71a;stroke:#5c63b7;stroke-width:1.8}.radar text{font-size:11px;fill:#676767}.radar-caption{font-size:10px;text-align:center;color:var(--muted);letter-spacing:1px}.dimension{padding:13px 0;border-bottom:1px solid #e6e6e6}.dimension:first-child{padding-top:0}.dimension-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.star-rating{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;color:#7168b1;font-size:16px;letter-spacing:1px}.empty-stars{color:#d1d1d1}.star-value{font-size:12px;letter-spacing:0;color:var(--ink);font-variant-numeric:tabular-nums}.star-value small{color:var(--muted);font-weight:400;font-size:10px}.dimension-note{font-size:11px;color:var(--muted);line-height:1.8}.dimension blockquote{margin:8px 0 0;padding:6px 12px;border-left:2px solid #d9ddf1;color:#676767;font-size:11px;line-height:1.8}.career-list{display:grid;grid-template-columns:1fr 1fr;gap:15px}.career-card{padding:20px;border:1px solid var(--line);border-radius:5px;break-inside:avoid-page;page-break-inside:avoid}.career-heading{display:flex;align-items:flex-start;gap:10px}.rank{color:var(--accent);font-size:11px;font-weight:650;padding-top:2px}.career-original{font-size:9px;color:var(--muted);margin:2px 0 12px;line-height:1.5}.career-score{margin-left:auto;font-size:20px;line-height:1.3;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}.career-score small{display:block;font-size:8px;font-weight:400;color:var(--muted)}.career-card>p{font-size:11px;line-height:1.9}.career-reason{color:var(--muted)}.career-evidence{font-size:10px;color:#676767;border-top:1px solid #e6e6e6;padding-top:8px}.career-evidence b{font-weight:550;color:#484848}.career-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:13px}.career-foot>span:last-child{font-size:8px;color:var(--muted)}.career-foot .star-rating{font-size:12px;gap:6px}.source-note,.data-note{margin-top:22px;padding:14px 16px;background:#f5f6fb;color:#676767;font-size:11px;line-height:1.9;border-left:2px solid #d9ddf1}.source-url{font-size:9px}.turn-list{display:grid;gap:20px}.turn-card{border:1px solid var(--line);padding:22px 25px;border-radius:5px}.turn-head{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.turn-label,.small-label{font-size:9px;letter-spacing:1px;color:var(--muted);font-weight:650}.turn-label{color:var(--accent)}.turn-card h3{font-size:15px;line-height:1.9;margin-bottom:17px}.answer,.feedback{padding:12px 15px;background:#f5f6fb;margin-top:10px;border-radius:3px}.answer p,.feedback p{font-size:12px;white-space:pre-wrap;margin:4px 0}.feedback{background:#f0f0f0;border-left:2px solid #d9ddf1}.pending{border-style:dashed}.score-banner{display:flex;align-items:center;gap:25px;padding:18px 22px;background:#f5f6fb}.score-banner strong{font-size:31px;line-height:1.1;color:var(--accent)}.score-banner small{font-size:13px;font-weight:400;color:var(--muted)}.score-banner p{font-size:11px;color:var(--muted);margin:0}.report-footer{padding:22px 56px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:9px;letter-spacing:.3px}@media(max-width:700px){body{font-size:13px}main{margin:12px}.toolbar{margin:12px 12px 0}.report-header{padding:26px 24px}.report-body{padding:0 24px 24px}.report-footer{padding:20px 24px;display:block}.brand-row{margin-bottom:28px}.brand-tag{display:none}h1{font-size:26px}.profile-grid{grid-template-columns:1fr;gap:16px}.radar-panel{position:static;max-width:300px;margin:auto}.career-list{grid-template-columns:1fr}.meta{gap:16px}.turn-card{padding:18px}.turn-head{gap:8px}.edition{font-size:9px}}@page{size:A4;margin:12mm}@media print{body{background:#ffffff;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}main{max-width:none;margin:0;box-shadow:none}.toolbar{display:none}.report-header{padding:12mm 7mm 8mm}.report-body{padding:0 7mm 7mm}.report-footer{padding:5mm 7mm;font-size:8pt}.report-section{padding:6mm 0}h2,h3{break-after:avoid-page}p,li{orphans:3;widows:3}.radar-panel{position:static}.dimension,.score-banner,.source-note{break-inside:avoid-page}.career-list{display:block;columns:2;column-gap:4mm}.career-card{display:inline-block;width:100%;margin:0 0 4mm;padding:4mm}.turn-card{padding:5mm;box-decoration-break:clone;-webkit-box-decoration-break:clone}.brand-row{margin-bottom:8mm}.profile-grid{grid-template-columns:62mm 1fr;gap:5mm}.dimension-note{font-size:8pt}.explanation{font-size:8.5pt}.report-footer{break-inside:avoid-page}}
+:root{color-scheme:light;--ink:#242a3d;--muted:#697187;--line:#e5e8f0;--accent:#5c63b7;--paper:#ffffff}*{box-sizing:border-box}a{color:var(--accent);text-underline-offset:3px;text-decoration-thickness:1px}body{margin:0;background:#f7f8fc;color:var(--ink);font:14px/1.85 "PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;overflow-wrap:anywhere}main{max-width:1020px;margin:32px auto;background:var(--paper);border:1px solid #dddddd}.toolbar{max-width:1020px;margin:24px auto -16px;text-align:right;color:var(--muted);font-size:12px}.toolbar button{font:inherit;color:var(--ink);background:#ffffff;border:1px solid #d6d6d6;border-radius:6px;padding:8px 14px;cursor:pointer}.report-header{padding:42px 56px 36px;border-top:4px solid var(--ink);border-bottom:1px solid var(--line)}.brand-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}.wordmark{font-weight:600;font-size:19px;letter-spacing:-.5px}.brand-tag{font-size:10px;letter-spacing:2px;color:var(--muted);margin-left:10px}.edition{font-size:11px;color:var(--muted)}h1{font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:30px;font-weight:500;letter-spacing:0;line-height:1.4;margin:0 0 14px}.subtitle{font-size:15px;color:var(--muted);margin:0}.meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:28px;font-size:12px;color:var(--muted)}.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 24px}.meta-grid b{display:block;font-size:11px;color:var(--muted);font-weight:500}.meta-grid span{font-size:13.5px}.meta b{display:block;font-weight:550;color:var(--ink)}.report-body{padding:8px 56px 36px}.report-section{padding:28px 0;border-bottom:1px solid var(--line)}.section-title{display:flex;gap:13px;align-items:center;margin-bottom:18px}.section-title>span{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px}h2{font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-weight:500;font-size:19px;line-height:1.5;letter-spacing:0;margin:0}h3{font-size:14px;margin:0;font-weight:650}p{margin:8px 0}.muted,.explanation{color:var(--muted)}.explanation{font-size:12px;line-height:1.9;margin:0 0 20px}.item-list{list-style:none;padding:0;margin:0;counter-reset:item}.item-list li{position:relative;padding:11px 0 11px 24px;border-bottom:1px solid #e9e9e9;white-space:pre-line}.item-list li:last-child{border-bottom:0}.item-list li:before{content:"";width:5px;height:5px;background:var(--accent);position:absolute;left:3px;top:22px;border-radius:50%}.priority .item-list li:before{background:#8e8e8e}.checklist .item-list li:before{width:10px;height:10px;background:none;border:1px solid #a7a7a7;top:18px;border-radius:2px}.tags{display:flex;gap:8px;flex-wrap:wrap}.tag{background:#f3f3f3;border:1px solid #dcdcdc;color:#585858;border-radius:4px;padding:4px 10px;font-size:12px}.profile-grid{display:grid;grid-template-columns:275px 1fr;gap:30px;align-items:start}.radar-panel{position:sticky;top:20px}.radar{width:100%;max-width:320px;display:block}.radar-grid{fill:none;stroke:#dcdcdc;stroke-width:1}.radar-axis{stroke:#e2e2e2;stroke-width:1}.radar-fill{fill:#5c63b71a;stroke:#5c63b7;stroke-width:1.8}.radar text{font-size:11px;fill:#676767}.radar-caption{font-size:10px;text-align:center;color:var(--muted);letter-spacing:1px}.dimension{padding:13px 0;border-bottom:1px solid #e6e6e6}.dimension:first-child{padding-top:0}.dimension-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.star-rating{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;color:#7168b1;font-size:16px;letter-spacing:1px}.empty-stars{color:#d1d1d1}.star-value{font-size:12px;letter-spacing:0;color:var(--ink);font-variant-numeric:tabular-nums}.star-value small{color:var(--muted);font-weight:400;font-size:10px}.dimension-note{font-size:11px;color:var(--muted);line-height:1.8}.dimension blockquote{margin:8px 0 0;padding:6px 12px;border-left:2px solid #d9ddf1;color:#676767;font-size:11px;line-height:1.8}.career-list{display:grid;grid-template-columns:1fr 1fr;gap:15px}.career-card{padding:20px;border:1px solid var(--line);border-radius:5px;break-inside:avoid-page;page-break-inside:avoid}.career-heading{display:flex;align-items:flex-start;gap:10px}.rank{color:var(--accent);font-size:11px;font-weight:650;padding-top:2px}.career-original{font-size:9px;color:var(--muted);margin:2px 0 12px;line-height:1.5}.career-score{margin-left:auto;font-size:20px;line-height:1.3;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}.career-score small{display:block;font-size:8px;font-weight:400;color:var(--muted)}.career-card>p{font-size:11px;line-height:1.9}.career-reason{color:var(--muted)}.career-evidence{font-size:10px;color:#676767;border-top:1px solid #e6e6e6;padding-top:8px}.career-evidence b{font-weight:550;color:#484848}.career-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:13px}.career-foot>span:last-child{font-size:8px;color:var(--muted)}.career-foot .star-rating{font-size:12px;gap:6px}.source-note,.data-note{margin-top:22px;padding:14px 16px;background:#f5f6fb;color:#676767;font-size:11px;line-height:1.9;border-left:2px solid #d9ddf1}.source-url{font-size:9px}.turn-list{display:grid;gap:20px}.turn-card{border:1px solid var(--line);padding:22px 25px;border-radius:5px}.turn-head{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.turn-label,.small-label{font-size:9px;letter-spacing:1px;color:var(--muted);font-weight:650}.turn-label{color:var(--accent)}.turn-card h3{font-size:15px;line-height:1.9;margin-bottom:17px}.answer,.feedback{padding:12px 15px;background:#f5f6fb;margin-top:10px;border-radius:3px}.answer p,.feedback p{font-size:12px;white-space:pre-wrap;margin:4px 0}.feedback{background:#f0f0f0;border-left:2px solid #d9ddf1}.pending{border-style:dashed}.score-banner{display:flex;align-items:center;gap:25px;padding:18px 22px;background:#f5f6fb}.score-banner strong{font-size:31px;line-height:1.1;color:var(--accent)}.score-banner small{font-size:13px;font-weight:400;color:var(--muted)}.score-banner p{font-size:11px;color:var(--muted);margin:0}.report-footer{padding:22px 56px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:9px;letter-spacing:.3px}@media(max-width:700px){body{font-size:13px}main{margin:12px}.toolbar{margin:12px 12px 0}.report-header{padding:26px 24px}.report-body{padding:0 24px 24px}.report-footer{padding:20px 24px;display:block}.brand-row{margin-bottom:28px}.brand-tag{display:none}h1{font-size:26px}.profile-grid{grid-template-columns:1fr;gap:16px}.radar-panel{position:static;max-width:300px;margin:auto}.career-list{grid-template-columns:1fr}.meta{gap:16px}.turn-card{padding:18px}.turn-head{gap:8px}.edition{font-size:9px}}@page{size:A4;margin:12mm}@media print{body{background:#ffffff;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}main{max-width:none;margin:0;box-shadow:none}.toolbar{display:none}.report-header{padding:12mm 7mm 8mm}.report-body{padding:0 7mm 7mm}.report-footer{padding:5mm 7mm;font-size:8pt}.report-section{padding:6mm 0}h2,h3{break-after:avoid-page}p,li{orphans:3;widows:3}.radar-panel{position:static}.dimension,.score-banner,.source-note{break-inside:avoid-page}.career-list{display:block;columns:2;column-gap:4mm}.career-card{display:inline-block;width:100%;margin:0 0 4mm;padding:4mm}.turn-card{padding:5mm;box-decoration-break:clone;-webkit-box-decoration-break:clone}.brand-row{margin-bottom:8mm}.profile-grid{grid-template-columns:62mm 1fr;gap:5mm}.dimension-note{font-size:8pt}.explanation{font-size:8.5pt}.report-footer{break-inside:avoid-page}}
 @media print{.career-report{break-before:page}.report-header{padding:5mm 7mm 4mm}.brand-row{margin-bottom:4mm}h1{font-size:23pt}.kicker{margin-bottom:3mm}.meta{margin-top:4mm}.report-section{padding:4mm 0}.section-title{margin-bottom:3mm}.profile-grid{grid-template-columns:54mm 1fr;gap:5mm}.dimension{padding:2mm 0}.dimension-note{margin:1mm 0;font-size:8pt;line-height:1.55}.dimension blockquote{font-size:7.5pt;line-height:1.5;margin:1mm 0 0;padding:1mm 2mm}.dimension blockquote+blockquote{display:none}.career-list{display:grid;grid-template-columns:1fr 1fr;gap:3mm;columns:auto}.career-card{display:block;margin:0;padding:3mm}.career-card>p{font-size:8pt}.career-definition{font-size:8pt;color:var(--muted)}.career-evidence{font-size:7.5pt}.source-note,.data-note{font-size:7.5pt;line-height:1.6;padding:3mm;margin-top:3mm}}
 """
 
@@ -121,13 +237,17 @@ def render_export(data: Mapping, export_type: str, output_format: str) -> tuple[
     filename = f"careerpilot-{export_type}.{output_format}"
     if output_format == "json":
         return filename, "application/json; charset=utf-8", json.dumps(data, ensure_ascii=False, indent=2)
-    titles = {'profile': '简历资料与职业参考', 'diagnosis': '简历诊断报告', 'interview': '模拟面试反馈'}
+    titles = {'profile': '简历资料与职业参考', 'diagnosis': '简历诊断报告', 'interview': '模拟面试反馈', 'resume_draft': '求职简历', 'scenario': '场景准备攻略'}
     title = titles.get(export_type, '求职分析报告')
     sections = []
     analysis = data if export_type == 'profile' else data.get('profile_analysis')
     if isinstance(analysis, Mapping) and analysis.get('dimensions'):
         sections.append(_section(f'{len(sections)+1:02d}', '简历资料检查', _analysis(analysis)))
-    if export_type == 'profile':
+    if export_type == 'resume_draft':
+        return filename, 'text/html; charset=utf-8', _render_resume_document(data, title)
+    if export_type == 'scenario':
+        sections.extend(_scenario_sections(data))
+    elif export_type == 'profile':
         careers = data.get('careers')
         if isinstance(careers, Mapping):
             sections.append(_section(f'{len(sections)+1:02d}', '10 个职业参考', _careers(careers), 'career-report'))
