@@ -153,6 +153,10 @@ export default function DeveloperWorkbench() {
         </div>
         <Link className="dev-back" href="/"><ArrowLeft size={15} />返回求职工作台</Link>
       </header>
+      <nav className="dev-docs-nav" aria-label="开发者资料">
+        <Link href="/developer/docs">数据库总览与规则引擎 <ArrowRight size={14} /></Link>
+        <Link href="/privacy">数据与隐私说明 <ArrowRight size={14} /></Link>
+      </nav>
       <div className="dev-grid">
         <section className="dev-panel" aria-label="场景定制">
           <h2>场景定制</h2>

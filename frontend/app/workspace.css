@@ -19,8 +19,8 @@
 .brand small { font-size: 11px; }
 .rail-label, .rail-link-index, .rail-edition { font-size: 12px; }
 .rail-link { border-radius: 4px; font-size: 14px; }
-.rail-link.active { border-color: var(--line); box-shadow: none; background: var(--surface); color: var(--accent-dark); }
-.rail-link.active .rail-link-index { color: var(--accent-dark); }
+.rail-link.active { border-color: transparent; }
+
 .rail-footer { padding-inline: 8px; }
 .chat-section, .upload-section, .analysis-section, .next-stage, .media-studio { padding: 26px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); box-shadow: none; }
 .chat-section:hover, .upload-section:hover, .analysis-section:hover, .next-stage:hover { box-shadow: none; transform: none; }
@@ -277,3 +277,10 @@ footer { margin-top: 22px; font-size: 12px; }
 @media (max-width: 620px) {
   .rewrite-columns { grid-template-columns: 1fr; }
 }
+.dev-docs-nav { display: flex; gap: 20px; margin-top: 14px; }
+.dev-docs-nav a { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--accent-dark); text-decoration: none; }
+.dev-docs-nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Tech polish overrides (workspace scope, after base rules) */
+.chat-section, .upload-section, .analysis-section, .next-stage, .media-studio { border-color: transparent; border-radius: var(--radius); box-shadow: var(--shadow-card); }
+.chat-section:hover, .upload-section:hover, .analysis-section:hover, .next-stage:hover, .media-studio:hover { box-shadow: var(--shadow-lift); transform: translateY(-2px); }
