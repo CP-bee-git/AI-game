@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
+  <rect id="bg-06-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background" />
+  <g id="flow-title" data-pptx-bounds="80 44 700 60">
+    <text x="80" y="88" font-size="34" font-weight="bold" fill="#222733">先精准，再联网，再给攻略</text>
+  </g>
+  <g id="flow-nodes" data-pptx-bounds="60 150 1160 330">
+    <g id="flow-n1">
+      <polygon points="146,150 234,150 278,238 234,326 146,326 102,238" fill="#1B2A4A" />
+      <text x="212" y="228" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">确认场景</text>
+      <text x="212" y="258" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">类型/届次</text>
+      <text x="212" y="368" font-size="17" fill="#5D6472" text-anchor="middle">信息不足先追问</text>
+    </g>
+    <g id="flow-n2">
+      <circle cx="436" cy="238" r="88" fill="#128C7E" />
+      <text x="436" y="228" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">联网查证</text>
+      <text x="436" y="258" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">官方优先</text>
+      <text x="436" y="368" font-size="16" fill="#5D6472" text-anchor="middle">SSRF 防护读取</text>
+    </g>
+    <g id="flow-n3">
+      <polygon points="658,150 746,150 790,238 746,326 658,326 614,238" fill="#1B2A4A" />
+      <text x="702" y="228" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">证据整理</text>
+      <text x="702" y="258" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">逐字核对</text>
+      <text x="702" y="368" font-size="16" fill="#5D6472" text-anchor="middle">冲突如实呈现</text>
+    </g>
+    <g id="flow-n4">
+      <circle cx="926" cy="238" r="88" fill="#128C7E" />
+      <text x="926" y="228" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">攻略生成</text>
+      <text x="926" y="258" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">动作清单</text>
+      <text x="926" y="368" font-size="16" fill="#5D6472" text-anchor="middle">预测题分开标注</text>
+    </g>
+    <g id="flow-n5">
+      <polygon points="1148,150 1236,150 1280,238 1236,326 1148,326 1104,238" fill="#1B2A4A" />
+      <text x="1192" y="228" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">复核导出</text>
+      <text x="1192" y="258" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">带来源</text>
+      <text x="1192" y="368" font-size="16" fill="#5D6472" text-anchor="middle">DeepSeek 复核</text>
+    </g>
+    <path d="M280 238 h44 M524 238 h66 M790 238 h24 M1014 238 h66" stroke="#128C7E" stroke-width="3" />
+  </g>
+  <g id="flow-note" data-pptx-bounds="80 520 1120 150">
+    <rect x="80" y="520" width="1120" height="150" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
+    <text x="116" y="584" font-size="26" font-weight="bold" fill="#E8A33D">不能确认</text>
+    <text x="116" y="622" font-size="26" font-weight="bold" fill="#E8A33D">就不生成</text>
+    <text x="320" y="576" font-size="19" fill="#222733">缺少年份、同名赛事、不同赛道 → 返回澄清问题，而不是编造一份“看似真实”的攻略。</text>
+    <text x="320" y="618" font-size="19" fill="#222733">没有联网凭据 → 明确标注「未联网核验」，只给通用训练建议。</text>
+  </g>
+</svg>

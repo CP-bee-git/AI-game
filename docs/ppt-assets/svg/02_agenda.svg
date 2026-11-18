@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="toc" font-family="Noto Sans CJK SC">
+  <rect id="bg-02-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background" />
+  <g id="agenda-title" data-pptx-bounds="80 50 500 60">
+    <text x="80" y="92" font-size="34" font-weight="bold" fill="#222733">今天讲什么</text>
+  </g>
+  <rect id="agenda-rule" x="82" y="128" width="4" height="520" fill="#128C7E" data-pptx-role="decoration" />
+  <g id="agenda-items" data-pptx-bounds="120 130 1080 530">
+    <g id="agenda-row1">
+      <text x="120" y="180" font-size="28" font-weight="bold" fill="#128C7E">01</text>
+      <text x="220" y="180" font-size="24" font-weight="bold" fill="#222733">痛点</text>
+      <text x="600" y="180" font-size="19" fill="#5D6472">求职材料失真、攻略来源不明、准备路径不具体</text>
+    </g>
+    <g id="agenda-row2">
+      <text x="120" y="266" font-size="28" font-weight="bold" fill="#E8A33D">02</text>
+      <text x="220" y="266" font-size="24" font-weight="bold" fill="#222733">规则引擎 ★</text>
+      <text x="600" y="266" font-size="19" fill="#5D6472">确定性六维画像评分，公开 rubric，逐条可核对</text>
+    </g>
+    <g id="agenda-row3">
+      <text x="120" y="352" font-size="28" font-weight="bold" fill="#128C7E">03</text>
+      <text x="220" y="352" font-size="24" font-weight="bold" fill="#222733">项目逻辑</text>
+      <text x="600" y="352" font-size="19" fill="#5D6472">确认事实 → 查证要求 → 生成可执行攻略</text>
+    </g>
+    <g id="agenda-row4">
+      <text x="120" y="438" font-size="28" font-weight="bold" fill="#128C7E">04</text>
+      <text x="220" y="438" font-size="24" font-weight="bold" fill="#222733">系统架构</text>
+      <text x="600" y="438" font-size="19" fill="#5D6472">Next.js / FastAPI / Dify 工作流 / 多模型分工</text>
+    </g>
+    <g id="agenda-row5">
+      <text x="120" y="524" font-size="28" font-weight="bold" fill="#128C7E">05</text>
+      <text x="220" y="524" font-size="24" font-weight="bold" fill="#222733">创新点</text>
+      <text x="600" y="524" font-size="19" fill="#5D6472">事实锁定、引用可核对、版本失效、会话隔离</text>
+    </g>
+    <g id="agenda-row6">
+      <text x="120" y="610" font-size="28" font-weight="bold" fill="#128C7E">06</text>
+      <text x="220" y="610" font-size="24" font-weight="bold" fill="#222733">开发者优势</text>
+      <text x="600" y="610" font-size="19" fill="#5D6472">精准场景攻略、比赛答辩训练、可导出来源报告</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
+  <rect id="bg-08-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background" />
+  <g id="inno-title" data-pptx-bounds="80 44 800 60">
+    <text x="80" y="88" font-size="34" font-weight="bold" fill="#222733">创新点：让 AI 输出可以被核对</text>
+  </g>
+  <g id="inno-rows" data-pptx-bounds="80 130 1120 560">
+    <g id="inno-r1">
+      <rect x="80" y="130" width="1120" height="112" rx="14" fill="#FFFFFF" stroke="#D8DCE6" />
+      <rect x="80" y="130" width="14" height="112" fill="#1B2A4A" />
+      <text x="120" y="174" font-size="23" font-weight="bold" fill="#222733">确定性评分</text>
+      <text x="120" y="212" font-size="19" fill="#5D6472">规则引擎先于模型给分；同一输入永远同一分数</text>
+      <text x="1180" y="180" font-size="19" font-weight="bold" fill="#128C7E" text-anchor="end">可复算</text>
+    </g>
+    <g id="inno-r2">
+      <rect x="80" y="258" width="1120" height="112" rx="14" fill="#E2F2EF" />
+      <rect x="80" y="258" width="14" height="112" fill="#128C7E" />
+      <text x="120" y="302" font-size="23" font-weight="bold" fill="#222733">事实锁定</text>
+      <text x="120" y="340" font-size="19" fill="#5D6472">每条成稿句子映射 fact_id；画像一改，旧草稿标记失效</text>
+      <text x="1180" y="308" font-size="19" font-weight="bold" fill="#128C7E" text-anchor="end">成果归属不混淆</text>
+    </g>
+    <g id="inno-r3">
+      <rect x="80" y="386" width="1120" height="112" rx="14" fill="#FFFFFF" stroke="#D8DCE6" />
+      <rect x="80" y="386" width="14" height="112" fill="#1B2A4A" />
+      <text x="120" y="430" font-size="23" font-weight="bold" fill="#222733">引用可核对</text>
+      <text x="120" y="468" font-size="19" fill="#5D6472">「已查证」结论必须带来源 ID 与逐字片段，后端校验</text>
+      <text x="1180" y="436" font-size="19" font-weight="bold" fill="#128C7E" text-anchor="end">模型说了不算</text>
+    </g>
+    <g id="inno-r4">
+      <rect x="80" y="514" width="1120" height="112" rx="14" fill="#E2F2EF" />
+      <rect x="80" y="514" width="14" height="112" fill="#128C7E" />
+      <text x="120" y="558" font-size="23" font-weight="bold" fill="#222733">诚实降级</text>
+      <text x="120" y="596" font-size="19" fill="#5D6472">断网 / 无凭据 / 查无资料 → 明确标注，不伪装成功</text>
+      <text x="1180" y="564" font-size="19" font-weight="bold" fill="#128C7E" text-anchor="end">通用与官方分开</text>
+    </g>
+  </g>
+</svg>
