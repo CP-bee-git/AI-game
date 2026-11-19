@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
-  <rect id="bg-10-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background" />
+  <rect id="bg-09-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background"/>
   <g id="scr-title" data-pptx-bounds="80 44 800 60">
-    <text x="80" y="88" font-size="34" font-weight="bold" fill="#222733">从工作台到可投递的简历</text>
+    <text x="80" y="88" font-size="34" font-weight="bold" fill="#222733">当前成果：从工作台到可投递的简历</text>
   </g>
   <g id="scr-left" data-pptx-bounds="70 130 700 480">
-    <image href="../images/live-home_2.png" x="70" y="130" width="700" height="438" preserveAspectRatio="xMidYMid slice" />
+    <image href="../images/live-home_2.png" x="70" y="130" width="700" height="438" preserveAspectRatio="xMidYMid slice"/>
     <text x="420" y="600" font-size="18" fill="#5D6472" text-anchor="middle">求职工作台：上传 → 核对 → 匹配 → 诊断 → 面试</text>
   </g>
   <g id="scr-right" data-pptx-bounds="800 130 410 480">
-    <image href="../images/resume-export_2.png" x="800" y="130" width="410" height="438" preserveAspectRatio="xMidYMid slice" />
+    <image href="../images/resume-export_2.png" x="800" y="130" width="410" height="438" preserveAspectRatio="xMidYMid slice"/>
     <text x="1005" y="600" font-size="18" fill="#5D6472" text-anchor="middle">简历导出：标准排版，占位醒目</text>
   </g>
   <g id="scr-note" data-pptx-bounds="80 630 1120 60">
-    <rect x="80" y="630" width="1120" height="60" rx="30" fill="#E2F2EF" />
+    <rect x="80" y="630" width="1120" height="60" rx="30" fill="#E2F2EF"/>
     <text x="640" y="668" font-size="19" font-weight="bold" fill="#128C7E" text-anchor="middle">五种视口（1440 / 1280 / 768 / 390 / 360）截图验收通过，长中文无横向溢出</text>
   </g>
 </svg>

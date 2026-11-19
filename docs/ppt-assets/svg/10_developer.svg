@@ -1,32 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
-  <rect id="bg-09-1" width="1280" height="720" fill="#121E38" data-pptx-role="background" />
+  <rect id="bg-10-1" width="1280" height="720" fill="#121E38" data-pptx-role="background"/>
   <g id="dev-title" data-pptx-bounds="80 44 800 60">
-    <text x="80" y="88" font-size="34" font-weight="bold" fill="#FFFFFF">面向开发者：/developer 工作台</text>
+    <text x="80" y="88" font-size="34" font-weight="bold" fill="#FFFFFF">当前成果：/developer 工作台</text>
   </g>
   <g id="dev-points" data-pptx-bounds="80 130 560 540">
     <g id="dev-p1">
-      <rect x="80" y="130" width="12" height="110" fill="#128C7E" />
+      <rect x="80" y="130" width="12" height="110" fill="#128C7E"/>
       <text x="110" y="168" font-size="23" font-weight="bold" fill="#FFFFFF">精准场景</text>
       <text x="110" y="206" font-size="19" fill="#C3CAE2">求职 / 面试 / 比赛三类型，届次、赛道、阶段先确认</text>
     </g>
     <g id="dev-p2">
-      <rect x="80" y="262" width="12" height="110" fill="#128C7E" />
+      <rect x="80" y="262" width="12" height="110" fill="#128C7E"/>
       <text x="110" y="300" font-size="23" font-weight="bold" fill="#FFFFFF">联网查证</text>
       <text x="110" y="338" font-size="19" fill="#C3CAE2">官方公告与规则优先，每条结论可点开来源</text>
     </g>
     <g id="dev-p3">
-      <rect x="80" y="394" width="12" height="110" fill="#128C7E" />
+      <rect x="80" y="394" width="12" height="110" fill="#128C7E"/>
       <text x="110" y="432" font-size="23" font-weight="bold" fill="#FFFFFF">训练衔接</text>
       <text x="110" y="470" font-size="19" fill="#C3CAE2">攻略一键进入练习，答辩预测题分开标注</text>
     </g>
     <g id="dev-p4">
-      <rect x="80" y="526" width="12" height="110" fill="#128C7E" />
+      <rect x="80" y="526" width="12" height="110" fill="#128C7E"/>
       <text x="110" y="564" font-size="23" font-weight="bold" fill="#FFFFFF">可交付</text>
       <text x="110" y="602" font-size="19" fill="#C3CAE2">导出带来源的报告，任务去重不重复计费</text>
     </g>
   </g>
   <g id="dev-shot" data-pptx-bounds="680 130 520 510">
-    <image href="../images/live-developer_2.png" x="680" y="130" width="520" height="433" preserveAspectRatio="xMidYMid slice" />
+    <image href="../images/live-developer_2.png" x="680" y="130" width="520" height="433" preserveAspectRatio="xMidYMid slice"/>
     <text x="940" y="616" font-size="18" fill="#8E98B8" text-anchor="middle">实际运行界面：场景表单 + 攻略文档</text>
   </g>
 </svg>

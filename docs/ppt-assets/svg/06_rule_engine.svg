@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
-  <rect id="bg-04-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background" />
+  <rect id="bg-06-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background"/>
   <g id="re-title" data-pptx-bounds="80 40 800 60">
     <text x="80" y="86" font-size="34" font-weight="bold" fill="#222733">核心亮点：确定性规则引擎</text>
   </g>
   <g id="re-badge" data-pptx-bounds="900 46 300 48">
-    <rect x="900" y="46" width="300" height="48" rx="24" fill="#E8A33D" />
+    <rect x="900" y="46" width="300" height="48" rx="24" fill="#E8A33D"/>
     <text x="1050" y="78" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">模型说话前，规则先给分</text>
   </g>
   <g id="re-dims" data-pptx-bounds="80 130 1120 420">
     <g id="re-dim1">
-      <rect x="80" y="130" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
-      <rect x="80" y="130" width="360" height="10" rx="5" fill="#128C7E" />
+      <rect x="80" y="130" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6"/>
+      <rect x="80" y="130" width="360" height="10" rx="5" fill="#128C7E"/>
       <text x="106" y="180" font-size="23" font-weight="bold" fill="#222733">技能匹配</text>
       <text x="360" y="182" font-size="28" font-weight="bold" fill="#E8A33D" text-anchor="end">25%</text>
       <text x="106" y="228" font-size="19" fill="#5D6472">必需 / 优先技能命中率</text>
@@ -18,17 +18,17 @@
       <text x="106" y="306" font-size="16" fill="#128C7E">岗位 JD ↔ 已确认技能集合</text>
     </g>
     <g id="re-dim2">
-      <rect x="460" y="130" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
-      <rect x="460" y="130" width="360" height="10" rx="5" fill="#1B2A4A" />
+      <rect x="460" y="130" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6"/>
+      <rect x="460" y="130" width="360" height="10" rx="5" fill="#1B2A4A"/>
       <text x="486" y="180" font-size="23" font-weight="bold" fill="#222733">经历相关</text>
       <text x="740" y="182" font-size="28" font-weight="bold" fill="#E8A33D" text-anchor="end">25%</text>
       <text x="486" y="228" font-size="19" fill="#5D6472">实习 + 项目质量交叉验证</text>
-      <text x="486" y="262" font-size="19" fill="#5D6472">“负责 / 主导 / 交付”等质量词</text>
+      <text x="486" y="262" font-size="19" fill="#5D6472">"负责 / 主导 / 交付"等质量词</text>
       <text x="486" y="306" font-size="16" fill="#128C7E">经历原文 × 岗位关键词</text>
     </g>
     <g id="re-dim3">
-      <rect x="840" y="130" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
-      <rect x="840" y="130" width="360" height="10" rx="5" fill="#128C7E" />
+      <rect x="840" y="130" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6"/>
+      <rect x="840" y="130" width="360" height="10" rx="5" fill="#128C7E"/>
       <text x="866" y="180" font-size="23" font-weight="bold" fill="#222733">学历背景</text>
       <text x="1120" y="182" font-size="28" font-weight="bold" fill="#E8A33D" text-anchor="end">15%</text>
       <text x="866" y="228" font-size="19" fill="#5D6472">门槛校验，不达标明说</text>
@@ -36,8 +36,8 @@
       <text x="866" y="306" font-size="16" fill="#128C7E">985/211/双一流仅按画像原文</text>
     </g>
     <g id="re-dim4">
-      <rect x="80" y="350" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
-      <rect x="80" y="350" width="360" height="10" rx="5" fill="#1B2A4A" />
+      <rect x="80" y="350" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6"/>
+      <rect x="80" y="350" width="360" height="10" rx="5" fill="#1B2A4A"/>
       <text x="106" y="400" font-size="23" font-weight="bold" fill="#222733">科研成果</text>
       <text x="360" y="402" font-size="28" font-weight="bold" fill="#E8A33D" text-anchor="end">15%</text>
       <text x="106" y="448" font-size="19" fill="#5D6472">论文 / 课题 / 专利各占一档</text>
@@ -45,8 +45,8 @@
       <text x="106" y="526" font-size="16" fill="#128C7E">关键词表公开在 matching.py</text>
     </g>
     <g id="re-dim5">
-      <rect x="460" y="350" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
-      <rect x="460" y="350" width="360" height="10" rx="5" fill="#128C7E" />
+      <rect x="460" y="350" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6"/>
+      <rect x="460" y="350" width="360" height="10" rx="5" fill="#128C7E"/>
       <text x="486" y="400" font-size="23" font-weight="bold" fill="#222733">奖项竞赛</text>
       <text x="740" y="402" font-size="28" font-weight="bold" fill="#E8A33D" text-anchor="end">10%</text>
       <text x="486" y="448" font-size="19" fill="#5D6472">国家级 / 省级 / 校级分层计档</text>
@@ -54,8 +54,8 @@
       <text x="486" y="526" font-size="16" fill="#128C7E">取最高层级，不重复累加</text>
     </g>
     <g id="re-dim6">
-      <rect x="840" y="350" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
-      <rect x="840" y="350" width="360" height="10" rx="5" fill="#1B2A4A" />
+      <rect x="840" y="350" width="360" height="200" rx="16" fill="#FFFFFF" stroke="#D8DCE6"/>
+      <rect x="840" y="350" width="360" height="10" rx="5" fill="#1B2A4A"/>
       <text x="866" y="400" font-size="23" font-weight="bold" fill="#222733">求职意向</text>
       <text x="1120" y="402" font-size="28" font-weight="bold" fill="#E8A33D" text-anchor="end">10%</text>
       <text x="866" y="448" font-size="19" fill="#5D6472">城市 / 岗位类型一致性</text>
@@ -64,10 +64,10 @@
     </g>
   </g>
   <g id="re-footer" data-pptx-bounds="80 580 1120 100">
-    <rect x="80" y="580" width="700" height="100" rx="14" fill="#E2F2EF" />
+    <rect x="80" y="580" width="700" height="100" rx="14" fill="#E2F2EF"/>
     <text x="106" y="620" font-size="20" font-weight="bold" fill="#128C7E">门槛折减</text>
     <text x="106" y="654" font-size="18" fill="#222733">每缺一项必需技能总分折减 15 分，下限 25 分——不归零、不抬分</text>
-    <rect x="800" y="580" width="400" height="100" rx="14" fill="#1B2A4A" />
+    <rect x="800" y="580" width="400" height="100" rx="14" fill="#1B2A4A"/>
     <text x="826" y="620" font-size="20" font-weight="bold" fill="#FFFFFF">为什么可信</text>
     <text x="826" y="654" font-size="18" fill="#E6EAF5">权重借鉴公开简历筛选 rubric，逐条可复算</text>
   </g>

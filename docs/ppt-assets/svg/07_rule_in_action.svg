@@ -1,60 +1,60 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
-  <rect id="bg-05-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background" />
+  <rect id="bg-07-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background"/>
   <g id="ria-title" data-pptx-bounds="80 40 800 60">
     <text x="80" y="86" font-size="34" font-weight="bold" fill="#222733">规则引擎怎么用：从分数到行动</text>
   </g>
   <g id="ria-flow" data-pptx-bounds="80 130 1120 170">
     <g id="ria-step1">
-      <rect x="80" y="130" width="200" height="170" rx="16" fill="#1B2A4A" />
+      <rect x="80" y="130" width="200" height="170" rx="16" fill="#1B2A4A"/>
       <text x="180" y="196" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">六维短板</text>
       <text x="180" y="232" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">定位</text>
       <text x="180" y="272" font-size="16" fill="#AFB8D4" text-anchor="middle">雷达式拆解</text>
     </g>
     <g id="ria-step2">
-      <rect x="310" y="130" width="200" height="170" rx="16" fill="#128C7E" />
+      <rect x="310" y="130" width="200" height="170" rx="16" fill="#128C7E"/>
       <text x="410" y="196" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">亮点前置</text>
       <text x="410" y="232" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">普通简化</text>
       <text x="410" y="272" font-size="16" fill="#E2F2EF" text-anchor="middle">简历优化建议</text>
     </g>
     <g id="ria-step3">
-      <rect x="540" y="130" width="200" height="170" rx="16" fill="#1B2A4A" />
+      <rect x="540" y="130" width="200" height="170" rx="16" fill="#1B2A4A"/>
       <text x="640" y="196" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">岗位适配</text>
       <text x="640" y="232" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">排序</text>
       <text x="640" y="272" font-size="16" fill="#AFB8D4" text-anchor="middle">逐岗总分 + 缺口</text>
     </g>
     <g id="ria-step4">
-      <rect x="770" y="130" width="200" height="170" rx="16" fill="#128C7E" />
+      <rect x="770" y="130" width="200" height="170" rx="16" fill="#128C7E"/>
       <text x="870" y="196" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">诊断报告</text>
       <text x="870" y="232" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">可核对</text>
       <text x="870" y="272" font-size="16" fill="#E2F2EF" text-anchor="middle">逐条附原文出处</text>
     </g>
     <g id="ria-step5">
-      <rect x="1000" y="130" width="200" height="170" rx="16" fill="#E8A33D" />
+      <rect x="1000" y="130" width="200" height="170" rx="16" fill="#E8A33D"/>
       <text x="1100" y="196" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">导出交付</text>
       <text x="1100" y="232" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">打印即 PDF</text>
       <text x="1100" y="272" font-size="16" fill="#FFF6E8" text-anchor="middle">HTML / JSON</text>
     </g>
-    <path d="M282 215 h26 M512 215 h26 M742 215 h26 M972 215 h26" stroke="#128C7E" stroke-width="3" />
-    <path d="M300 208 l12 7 -12 7 z M530 208 l12 7 -12 7 z M760 208 l12 7 -12 7 z M990 208 l12 7 -12 7 z" fill="#128C7E" />
+    <path d="M282 215 h26 M512 215 h26 M742 215 h26 M972 215 h26" stroke="#128C7E" stroke-width="3"/>
+    <path d="M300 208 l12 7 -12 7 z M530 208 l12 7 -12 7 z M760 208 l12 7 -12 7 z M990 208 l12 7 -12 7 z" fill="#128C7E"/>
   </g>
   <g id="ria-example" data-pptx-bounds="80 340 700 330">
-    <rect x="80" y="340" width="700" height="330" rx="16" fill="#FFFFFF" stroke="#D8DCE6" />
+    <rect x="80" y="340" width="700" height="330" rx="16" fill="#FFFFFF" stroke="#D8DCE6"/>
     <text x="108" y="388" font-size="22" font-weight="bold" fill="#1B2A4A">一份真实输出（合成示例）</text>
     <text x="108" y="434" font-size="19" fill="#222733">· 技能命中：Python、SQL；缺口：Flink（折减 15 分）</text>
-    <text x="108" y="474" font-size="19" fill="#222733">· 经历相关 78：实习含“主导”“交付”质量词</text>
+    <text x="108" y="474" font-size="19" fill="#222733">· 经历相关 78：实习含"主导""交付"质量词</text>
     <text x="108" y="514" font-size="19" fill="#222733">· 科研成果 40：核心期刊论文（一作）</text>
     <text x="108" y="554" font-size="19" fill="#222733">· 奖项竞赛 70：国家级二等奖（最高层级）</text>
     <text x="108" y="608" font-size="19" font-weight="bold" fill="#128C7E">→ 建议：把国家级获奖与论文放入简历前 1/3</text>
-    <text x="108" y="646" font-size="19" fill="#128C7E">→ 未写科研经历时不单设“科研”栏，空间留给项目</text>
+    <text x="108" y="646" font-size="19" fill="#128C7E">→ 未写科研经历时不单设"科研"栏，空间留给项目</text>
   </g>
   <g id="ria-side" data-pptx-bounds="810 340 390 330">
-    <rect x="810" y="340" width="390" height="330" rx="16" fill="#121E38" />
+    <rect x="810" y="340" width="390" height="330" rx="16" fill="#121E38"/>
     <text x="840" y="388" font-size="22" font-weight="bold" fill="#E8A33D">与纯模型打分的区别</text>
     <text x="840" y="436" font-size="19" fill="#E6EAF5">· 同一份输入永远同一个分</text>
     <text x="840" y="478" font-size="19" fill="#E6EAF5">· 每个数字能指回哪条规则</text>
     <text x="840" y="520" font-size="19" fill="#E6EAF5">· 不评价人格与录用概率</text>
     <text x="840" y="562" font-size="19" fill="#E6EAF5">· 修改画像后旧分自动失效</text>
-    <rect x="840" y="592" width="330" height="52" rx="10" fill="#1B2A4A" />
+    <rect x="840" y="592" width="330" height="52" rx="10" fill="#1B2A4A"/>
     <text x="1005" y="625" font-size="18" font-weight="bold" fill="#FFFFFF" text-anchor="middle">确定性 = 可复算 = 可信任</text>
   </g>
 </svg>

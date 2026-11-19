@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="ending" font-family="Noto Sans CJK SC">
-  <rect id="bg-12-1" width="1280" height="720" fill="#121E38" data-pptx-role="background" />
+  <rect id="bg-12-1" width="1280" height="720" fill="#121E38" data-pptx-role="background"/>
   <g id="end-compass" data-pptx-bounds="550 110 180 180">
-    <circle cx="640" cy="200" r="90" fill="none" stroke="#128C7E" stroke-width="3" />
-    <path d="M640 146 L682 200 L640 254 L598 200 Z" fill="#E8A33D" />
-    <circle cx="640" cy="200" r="11" fill="#FFFFFF" />
+    <circle cx="640" cy="200" r="90" fill="none" stroke="#128C7E" stroke-width="3"/>
+    <path d="M640 146 L682 200 L640 254 L598 200 Z" fill="#E8A33D"/>
+    <circle cx="640" cy="200" r="11" fill="#FFFFFF"/>
   </g>
   <g id="end-text" data-pptx-bounds="240 330 800 300" text-anchor="middle">
     <text x="640" y="420" font-size="42" font-weight="bold" fill="#FFFFFF">真实，是最好的简历。</text>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
+  <rect id="bg-04-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background"/>
+  <g id="goal-title" data-pptx-bounds="80 46 700 60">
+    <text x="80" y="90" font-size="34" font-weight="bold" fill="#222733">项目目标：让 AI 的每一步都可核对</text>
+  </g>
+  <g id="goal-principle" data-pptx-bounds="80 130 1120 90">
+    <rect x="80" y="130" width="1120" height="90" rx="14" fill="#1B2A4A"/>
+    <text x="640" y="186" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle">硬原则：不能确认就不生成 —— 信息不足先追问，无凭据明确标注"未联网核验"</text>
+  </g>
+  <g id="goal-steps" data-pptx-bounds="80 260 1120 240">
+    <g id="gs1"><rect x="80" y="260" width="200" height="200" rx="16" fill="#128C7E"/><text x="180" y="340" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">上传简历</text><text x="180" y="380" font-size="16" fill="#E2F2EF" text-anchor="middle">PDF / DOCX / 图片</text></g>
+    <g id="gs2"><rect x="310" y="260" width="200" height="200" rx="16" fill="#1B2A4A"/><text x="410" y="340" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">核对信息</text><text x="410" y="380" font-size="16" fill="#AFB8D4" text-anchor="middle">画像逐条确认</text></g>
+    <g id="gs3"><rect x="540" y="260" width="200" height="200" rx="16" fill="#128C7E"/><text x="640" y="340" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">比较岗位</text><text x="640" y="380" font-size="16" fill="#E2F2EF" text-anchor="middle">六维规则评分</text></g>
+    <g id="gs4"><rect x="770" y="260" width="200" height="200" rx="16" fill="#1B2A4A"/><text x="870" y="340" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">修改简历</text><text x="870" y="380" font-size="16" fill="#AFB8D4" text-anchor="middle">亮点前置建议</text></g>
+    <g id="gs5"><rect x="1000" y="260" width="200" height="200" rx="16" fill="#128C7E"/><text x="1100" y="340" font-size="21" font-weight="bold" fill="#FFFFFF" text-anchor="middle">练习面试</text><text x="1100" y="380" font-size="16" fill="#E2F2EF" text-anchor="middle">规则化给分</text></g>
+    <path d="M282 360 h26 M512 360 h26 M742 360 h26 M972 360 h26" stroke="#128C7E" stroke-width="3"/>
+    <path d="M300 353 l12 7 -12 7 z M530 353 l12 7 -12 7 z M760 353 l12 7 -12 7 z M990 353 l12 7 -12 7 z" fill="#128C7E"/>
+  </g>
+  <g id="goal-out" data-pptx-bounds="80 540 1120 130">
+    <rect x="80" y="540" width="1120" height="130" rx="16" fill="#E2F2EF"/>
+    <text x="116" y="596" font-size="22" font-weight="bold" fill="#128C7E">最终交付</text>
+    <text x="116" y="636" font-size="19" fill="#222733">带来源、带评分拆解、可打印成 PDF 的报告 —— 能核对、能执行、能投递</text>
+  </g>
+</svg>

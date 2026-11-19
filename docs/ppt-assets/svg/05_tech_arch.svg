@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="content" font-family="Noto Sans CJK SC">
+  <rect id="bg-05-1" width="1280" height="720" fill="#FBFAF6" data-pptx-role="background"/>
+  <g id="arch-title" data-pptx-bounds="80 44 800 60">
+    <text x="80" y="88" font-size="34" font-weight="bold" fill="#222733">技术方案：智能体四层架构</text>
+  </g>
+  <g id="arch-layers" data-pptx-bounds="90 130 680 530">
+    <g id="arch-l1">
+      <rect x="90" y="130" width="680" height="96" rx="14" fill="#1B2A4A"/>
+      <text x="124" y="170" font-size="22" font-weight="bold" fill="#FFFFFF">Next.js 16 · React 19</text>
+      <text x="124" y="206" font-size="18" fill="#E6EAF5">工作台 / 开发者页面 / 简历中心</text>
+    </g>
+    <g id="arch-l2">
+      <rect x="90" y="242" width="680" height="96" rx="14" fill="#128C7E"/>
+      <text x="124" y="282" font-size="22" font-weight="bold" fill="#FFFFFF">FastAPI 业务层 · 规则引擎所在层</text>
+      <text x="124" y="318" font-size="17" fill="#E2F2EF">校验 · 编排 · 六维评分</text>
+    </g>
+    <g id="arch-l3">
+      <rect x="90" y="354" width="680" height="96" rx="14" fill="#1B2A4A"/>
+      <text x="124" y="394" font-size="22" font-weight="bold" fill="#FFFFFF">Dify 17 个工作流</text>
+      <text x="124" y="430" font-size="18" fill="#E6EAF5">节点顺序与运行日志 · 提示词版本化管理</text>
+    </g>
+    <g id="arch-l4">
+      <rect x="90" y="466" width="680" height="96" rx="14" fill="#128C7E"/>
+      <text x="124" y="506" font-size="22" font-weight="bold" fill="#FFFFFF">模型与检索</text>
+      <text x="124" y="542" font-size="17" fill="#E2F2EF">千问写作 · DeepSeek 复核</text>
+    </g>
+    <path d="M430 226 v14 M430 338 v14 M430 450 v14" stroke="#5D6472" stroke-width="2"/>
+    <path d="M424 238 l6 10 6 -10 z M424 350 l6 10 6 -10 z M424 462 l6 10 6 -10 z" fill="#5D6472"/>
+  </g>
+  <g id="arch-sec" data-pptx-bounds="830 130 370 530">
+    <rect x="830" y="130" width="370" height="300" rx="16" fill="#E2F2EF"/>
+    <text x="860" y="176" font-size="22" font-weight="bold" fill="#128C7E">知识库与工具</text>
+    <text x="860" y="226" font-size="18" fill="#222733">· 55 条中国职业条目（带来源）</text>
+    <text x="860" y="268" font-size="18" fill="#222733">· 简历原文不进入搜索词</text>
+    <text x="860" y="310" font-size="18" fill="#222733">· 网页内容视为不可信数据</text>
+    <text x="860" y="352" font-size="18" fill="#222733">· 私网地址与重定向被拦截</text>
+    <text x="860" y="394" font-size="18" fill="#222733">· 凭据只在服务端</text>
+    <rect x="830" y="450" width="370" height="96" rx="12" fill="#1B2A4A"/>
+    <text x="860" y="488" font-size="18" font-weight="bold" fill="#E8A33D">规则引擎 = 纯函数</text>
+    <text x="860" y="520" font-size="17" fill="#E6EAF5">无模型调用，毫秒级返回，可复算</text>
+  </g>
+</svg>

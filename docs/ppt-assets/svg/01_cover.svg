@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" lang="zh-CN" data-pptx-page-role="cover" font-family="Noto Sans CJK SC">
   <rect id="bg-01-1" width="1280" height="720" fill="#121E38" data-pptx-role="background" />
-  <circle id="role-01-2" cx="1150" cy="90" r="230" fill="#1B2A4A" data-pptx-role="decoration" />
-  <circle id="role-01-3" cx="-60" cy="660" r="240" fill="#1B2A4A" data-pptx-role="decoration" />
+  <circle cx="1150" cy="90" r="230" fill="#1B2A4A" data-pptx-role="decoration" id="role-01-1" />
+  <circle cx="-60" cy="660" r="240" fill="#1B2A4A" data-pptx-role="decoration" id="role-01-2" />
   <g id="cover-compass" data-pptx-bounds="880 170 300 300">
     <circle cx="1030" cy="320" r="140" fill="none" stroke="#128C7E" stroke-width="3" />
     <circle cx="1030" cy="320" r="112" fill="none" stroke="#128C7E" stroke-width="1.5" stroke-dasharray="4 10" opacity=".55" />
@@ -18,7 +18,7 @@
   </g>
   <g id="cover-chip" data-pptx-bounds="90 520 500 56">
     <rect x="90" y="520" width="470" height="56" rx="28" fill="#128C7E" />
-    <text x="325" y="556" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">规则引擎 · 项目逻辑 · 创新点 · 开发者优势</text>
+    <text x="325" y="556" font-size="17" font-weight="bold" fill="#FFFFFF" text-anchor="middle">规则引擎 · 逻辑 · 创新 · 开发者</text>
   </g>
   <text id="cover-url" x="90" y="655" font-size="18" fill="#8E98B8">github.com/CP-bee-git/AI-game</text>
 </svg>
